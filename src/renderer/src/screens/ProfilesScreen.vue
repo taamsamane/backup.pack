@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import {
   DEFAULT_PORTS,
   type AuthMethod,
@@ -94,6 +94,16 @@ const authOptions = computed((): Array<{ value: AuthMethod; label: string }> => 
   return [{ value: 'password', label: 'Password' }]
 })
 
+/** Custom S3 endpoints need path-style (Arvan / MinIO). */
+watch(
+  () => [form.type, form.endpoint] as const,
+  ([type, endpoint]) => {
+    if (type === 'aws-s3' && String(endpoint).trim()) {
+      form.forcePathStyle = true
+    }
+  }
+)
+
 function resetForm(): void {
   editingId.value = null
   testResult.value = null
@@ -177,10 +187,12 @@ function buildOptions(): ProfileCreateInput['options'] {
     return { filePath: form.filePath }
   }
   if (isAws.value) {
+    const endpoint = form.endpoint.trim() || undefined
     return {
       region: form.region || undefined,
-      endpoint: form.endpoint || undefined,
-      forcePathStyle: form.forcePathStyle || undefined,
+      endpoint,
+      // Custom endpoints (Arvan/MinIO) need path-style unless the user turns it off.
+      forcePathStyle: endpoint ? form.forcePathStyle : form.forcePathStyle || undefined,
       awsProfile: form.authMethod === 'aws-profile' ? form.awsProfile : undefined,
       bucket: form.bucket || undefined,
       remotePath:
@@ -520,12 +532,21 @@ onMounted(() => {
             <span class="hint">Only objects under this key prefix are backed up.</span>
           </label>
           <label class="field field-wide">
-            <span>Custom endpoint (MinIO / S3-compatible)</span>
-            <input v-model="form.endpoint" type="text" />
+            <span>Custom endpoint (MinIO / Arvan / S3-compatible)</span>
+            <input
+              v-model="form.endpoint"
+              type="text"
+              placeholder="https://s3.ir-thr-at1.arvanstorage.ir"
+            />
+            <span class="hint">
+              Use the regional endpoint only (e.g.
+              <code>https://s3.ir-thr-at1.arvanstorage.ir</code>), not
+              <code>https://&lt;bucket&gt;.s3.…</code>. Put the bucket name in the Bucket field.
+            </span>
           </label>
           <label class="field checkbox">
             <input v-model="form.forcePathStyle" type="checkbox" />
-            <span>Force path-style addressing</span>
+            <span>Force path-style addressing (recommended for Arvan / MinIO)</span>
           </label>
         </template>
 

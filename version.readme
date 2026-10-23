@@ -2,6 +2,7 @@
 
 ## 2026-10-23
 
+- Fixed S3-compatible Test Connection `UnknownError` (Arvan/MinIO): normalize bucket-in-hostname endpoints, default path-style + disable flexible checksums, HeadBucket→ListObjects fallback, clearer error text.
 - Phase 6: AWS S3 / S3-compatible source adapter — list objects by prefix, download into cycle layout, ETag-aware manifests; profile bucket + optional object prefix (`remotePath`).
 
 ## 2026-10-22

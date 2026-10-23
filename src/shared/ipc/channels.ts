@@ -29,6 +29,12 @@ export const IpcChannels = {
   TASKS_DELETE: 'tasks:delete',
   TASKS_RUN_NOW: 'tasks:runNow',
   TASKS_LIST_RUNS: 'tasks:listRuns',
+  TASKS_GET_RUN: 'tasks:getRun',
+  TASKS_GET_RUN_LOG: 'tasks:getRunLog',
+  /** Main → renderer: live run progress */
+  TASKS_RUN_PROGRESS: 'tasks:runProgress',
+  /** Main → renderer: live log line */
+  TASKS_RUN_LOG_LINE: 'tasks:runLogLine',
   TASKS_PREVIEW_SCHEDULE: 'tasks:previewSchedule',
   TASKS_UPCOMING: 'tasks:upcoming',
   DIALOG_PICK_DIRECTORY: 'dialog:pickDirectory',

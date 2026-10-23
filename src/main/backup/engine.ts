@@ -1,11 +1,11 @@
 import { accessSync, constants, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { app } from 'electron'
 import { eq } from 'drizzle-orm'
 import { planBackupRun } from '../../shared/backup/planner'
 import { selectCyclesToPrune } from '../../shared/backup/retention'
 import type { BackupPlan } from '../../shared/backup/types'
 import { ProfileOptionsSchema } from '../../shared/profiles'
+import type { RunProgress } from '../../shared/runs'
 import { getOrm } from '../db/client'
 import { profiles, tasks } from '../db/schema'
 import { getLogger } from '../logging/logger'
@@ -29,23 +29,17 @@ import {
   markCycleArchived,
   markCycleFinalizing
 } from './cyclesRepo'
-import { claimPendingRun, finishRun } from './runsRepo'
 import { isDatabaseProfileType } from './db/dump'
 import { transferDatabaseDump } from './dbTransfer'
+import { openRunLog } from './runLog'
+import { clearRunProgress, emitRunProgress } from './runProgress'
+import { claimPendingRun, finishRun } from './runsRepo'
 import { adapterUnavailableMessage, getSourceAdapter, supportsBackupSource } from './sources'
 import { transferFromSource } from './transfer'
 
 function assertTargetWritable(targetFolder: string): void {
   mkdirSync(targetFolder, { recursive: true })
   accessSync(targetFolder, constants.W_OK)
-}
-
-function writeRunLog(runId: string, lines: string[]): string {
-  const dir = join(app.getPath('userData'), 'logs', 'runs')
-  mkdirSync(dir, { recursive: true })
-  const logPath = join(dir, `${runId}.log`)
-  writeFileSync(logPath, `${lines.join('\n')}\n`, 'utf8')
-  return logPath
 }
 
 function loadResolvedProfile(profileId: string): ResolvedProfile {
@@ -157,10 +151,33 @@ function ensureCycleDirs(taskRoot: string, folderName: string): void {
   mkdirSync(changesDir(cPath), { recursive: true })
 }
 
+function progress(
+  runId: string,
+  taskId: string,
+  taskName: string | null,
+  status: string,
+  percent: number,
+  phase: string,
+  message: string,
+  extra?: { bytesTotal?: number | null; fileCount?: number | null }
+): void {
+  const payload: RunProgress = {
+    runId,
+    taskId,
+    taskName,
+    status,
+    percent: Math.max(0, Math.min(100, Math.round(percent))),
+    phase,
+    message,
+    bytesTotal: extra?.bytesTotal ?? null,
+    fileCount: extra?.fileCount ?? null,
+    at: new Date().toISOString()
+  }
+  emitRunProgress(payload)
+}
+
 /**
- * Execute one claimed run.
- * - dryRun: validate target + plan (+ adapter presence); no downloads.
- * - real: SFTP/FTP/SSH transfer into cycle layout; other types wait for later phases.
+ * Execute one claimed run with live log + progress events for History.
  */
 export async function executeRun(runId: string): Promise<void> {
   const log = getLogger('engine')
@@ -170,31 +187,52 @@ export async function executeRun(runId: string): Promise<void> {
   }
 
   const startedAt = claimed.startedAt ?? new Date().toISOString()
-  const lines: string[] = [`runId=${runId}`, `dryRun=${claimed.dryRun}`, `startedAt=${startedAt}`]
+  const session = openRunLog(runId)
+  let taskId = claimed.taskId
+  let taskName: string | null = null
+
+  const note = (line: string): void => {
+    session.append(line)
+  }
+
+  note(`runId=${runId}`)
+  note(`dryRun=${claimed.dryRun}`)
+  note(`startedAt=${startedAt}`)
 
   try {
     const task = getOrm().select().from(tasks).where(eq(tasks.id, claimed.taskId)).get()
     if (!task) {
       throw new Error('Task not found')
     }
+    taskId = task.id
+    taskName = task.name
+
+    progress(runId, taskId, taskName, 'running', 5, 'start', 'Run claimed')
+
     const profile = loadResolvedProfile(task.profileId)
     const { settings, archivePasswordEncrypted } = parseTaskSettings(task.settingsJson)
     const archivePassword = loadArchivePassword(archivePasswordEncrypted)
     const now = new Date()
     const active = getActiveCycle(task.id)
+
+    progress(runId, taskId, taskName, 'running', 15, 'plan', 'Planning backup action')
     const plan = planBackupRun({ settings, activeCycle: active, now })
-    lines.push(...describePlan(plan))
-    lines.push(`profileType=${profile.type}`, `target=${task.targetFolder}`)
+    for (const line of describePlan(plan)) {
+      note(line)
+    }
+    note(`profileType=${profile.type}`)
+    note(`target=${task.targetFolder}`)
 
     assertTargetWritable(task.targetFolder)
     const taskRoot = taskRootPath(task.targetFolder, task.name)
     ensureTaskLayout(taskRoot)
-    lines.push(`taskRoot=${taskRoot}`)
+    note(`taskRoot=${taskRoot}`)
 
     const fileAdapter = getSourceAdapter(profile.type)
     const isDb = isDatabaseProfileType(profile.type)
 
     if (claimed.dryRun) {
+      progress(runId, taskId, taskName, 'running', 60, 'dry-run', 'Writing dry-run plan')
       const planPath = join(taskRoot, '.backuphub-last-dry-run.json')
       writeFileSync(
         planPath,
@@ -219,37 +257,38 @@ export async function executeRun(runId: string): Promise<void> {
         )}\n`,
         'utf8'
       )
-      lines.push(
-        `planSnapshot=${planPath}`,
+      note(`planSnapshot=${planPath}`)
+      note(
         supportsBackupSource(profile.type)
           ? `adapter=${isDb ? `db:${profile.type}` : fileAdapter?.kind} ready`
-          : adapterUnavailableMessage(profile.type),
-        'Dry-run OK — no data transferred'
+          : adapterUnavailableMessage(profile.type)
       )
-      const logPath = writeRunLog(runId, lines)
+      note('Dry-run OK — no data transferred')
       finishRun({
         runId,
         status: 'dry_run',
         startedAt,
-        logPath,
+        logPath: session.path,
         fileCount: 0,
         bytesTotal: 0,
         errorMessage: null
       })
+      progress(runId, taskId, taskName, 'dry_run', 100, 'done', 'Dry-run completed')
       log.info({ runId, taskId: task.id }, 'Dry-run completed')
       return
     }
 
     if (!supportsBackupSource(profile.type)) {
       const message = adapterUnavailableMessage(profile.type)
-      const logPath = writeRunLog(runId, [...lines, message])
+      note(message)
       finishRun({
         runId,
         status: 'failed',
         startedAt,
-        logPath,
+        logPath: session.path,
         errorMessage: message
       })
+      progress(runId, taskId, taskName, 'failed', 100, 'error', message)
       return
     }
 
@@ -258,6 +297,7 @@ export async function executeRun(runId: string): Promise<void> {
     let fileCount = 0
 
     if (plan.cycleToFinalize) {
+      progress(runId, taskId, taskName, 'running', 25, 'finalize', 'Finalizing previous cycle')
       const fin = await finalizeCycle({
         taskName: task.name,
         taskRoot,
@@ -270,16 +310,15 @@ export async function executeRun(runId: string): Promise<void> {
       })
       bytesTotal += fin.bytes
       fileCount += fin.fileCount
-      lines.push(
-        `finalized=${plan.cycleToFinalize.folderName}`,
-        `archive=${fin.archivePath ?? 'none'}`
-      )
+      note(`finalized=${plan.cycleToFinalize.folderName}`)
+      note(`archive=${fin.archivePath ?? 'none'}`)
       workingCycleId = null
     }
 
     let transferMode: 'baseline' | 'changes' = 'baseline'
     let cycleFolderName: string
 
+    progress(runId, taskId, taskName, 'running', 35, 'cycle', 'Preparing cycle folders')
     if (
       plan.action === 'baseline' ||
       plan.action === 'full_every_run' ||
@@ -297,7 +336,7 @@ export async function executeRun(runId: string): Promise<void> {
       cycleFolderName = created.folderName
       transferMode = 'baseline'
       ensureCycleDirs(taskRoot, cycleFolderName)
-      lines.push(`createdCycle=${cycleFolderName}`)
+      note(`createdCycle=${cycleFolderName}`)
     } else if (plan.action === 'changes' && plan.activeCycle) {
       workingCycleId = plan.activeCycle.id
       cycleFolderName = plan.activeCycle.folderName
@@ -306,6 +345,17 @@ export async function executeRun(runId: string): Promise<void> {
     } else {
       throw new Error(`Cannot execute plan action ${plan.action} without a cycle`)
     }
+
+    progress(
+      runId,
+      taskId,
+      taskName,
+      'running',
+      45,
+      'transfer',
+      isDb ? 'Dumping database…' : 'Transferring files…'
+    )
+    note(isDb ? 'Starting database dump…' : 'Starting file transfer…')
 
     const transfer = isDb
       ? await transferDatabaseDump({
@@ -326,11 +376,23 @@ export async function executeRun(runId: string): Promise<void> {
         })
     bytesTotal += transfer.bytes
     fileCount += transfer.fileCount
-    lines.push(...transfer.lines)
+    for (const line of transfer.lines) {
+      note(line)
+    }
 
+    progress(
+      runId,
+      taskId,
+      taskName,
+      'running',
+      90,
+      'retention',
+      'Applying retention',
+      { bytesTotal, fileCount }
+    )
     applyRetention(task.id, settings.retention?.keepCycles, taskRoot)
 
-    const logPath = writeRunLog(runId, [...lines, 'Backup transfer completed'])
+    note('Backup transfer completed')
     finishRun({
       runId,
       status: 'success',
@@ -338,8 +400,12 @@ export async function executeRun(runId: string): Promise<void> {
       cycleId: workingCycleId,
       bytesTotal,
       fileCount,
-      logPath,
+      logPath: session.path,
       errorMessage: null
+    })
+    progress(runId, taskId, taskName, 'success', 100, 'done', 'Backup completed', {
+      bytesTotal,
+      fileCount
     })
     log.info(
       { runId, taskId: task.id, profileType: profile.type, fileCount, bytesTotal },
@@ -347,20 +413,18 @@ export async function executeRun(runId: string): Promise<void> {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    lines.push(`ERROR ${message}`)
-    let logPath: string | null = null
-    try {
-      logPath = writeRunLog(runId, lines)
-    } catch {
-      // ignore
-    }
+    note(`ERROR ${message}`)
     finishRun({
       runId,
       status: 'failed',
       startedAt,
       errorMessage: message,
-      logPath
+      logPath: session.path
     })
+    progress(runId, taskId, taskName, 'failed', 100, 'error', message)
     log.error({ runId, err: message }, 'Run failed')
+  } finally {
+    // Keep last progress snapshot for History until a later clear; optional cleanup:
+    setTimeout(() => clearRunProgress(runId), 60_000)
   }
 }

@@ -1,54 +1,41 @@
 import { asc, desc, eq } from 'drizzle-orm'
-import { z } from 'zod'
+import type { TaskRunDto } from '../../shared/runs'
 import { getOrm } from '../db/client'
 import { taskRuns, tasks } from '../db/schema'
 
-export const TaskRunDtoSchema = z.object({
-  id: z.string().uuid(),
-  taskId: z.string().uuid(),
-  taskName: z.string().nullable(),
-  cycleId: z.string().uuid().nullable(),
-  status: z.string(),
-  startedAt: z.string().nullable(),
-  finishedAt: z.string().nullable(),
-  durationMs: z.number().nullable(),
-  bytesTotal: z.number().nullable(),
-  fileCount: z.number().nullable(),
-  errorMessage: z.string().nullable(),
-  logPath: z.string().nullable(),
-  dryRun: z.boolean(),
-  createdAt: z.string()
-})
-
-export type TaskRunDto = z.infer<typeof TaskRunDtoSchema>
+function toDto(row: typeof taskRuns.$inferSelect): TaskRunDto {
+  const task = getOrm().select().from(tasks).where(eq(tasks.id, row.taskId)).get()
+  return {
+    id: row.id,
+    taskId: row.taskId,
+    taskName: task?.name ?? null,
+    cycleId: row.cycleId,
+    status: row.status,
+    startedAt: row.startedAt,
+    finishedAt: row.finishedAt,
+    durationMs: row.durationMs,
+    bytesTotal: row.bytesTotal,
+    fileCount: row.fileCount,
+    errorMessage: row.errorMessage,
+    logPath: row.logPath,
+    dryRun: row.dryRun,
+    createdAt: row.createdAt
+  }
+}
 
 export function listRecentRuns(limit = 100): TaskRunDto[] {
-  const rows = getOrm()
+  return getOrm()
     .select()
     .from(taskRuns)
     .orderBy(desc(taskRuns.createdAt))
     .limit(limit)
     .all()
+    .map(toDto)
+}
 
-  return rows.map((row) => {
-    const task = getOrm().select().from(tasks).where(eq(tasks.id, row.taskId)).get()
-    return {
-      id: row.id,
-      taskId: row.taskId,
-      taskName: task?.name ?? null,
-      cycleId: row.cycleId,
-      status: row.status,
-      startedAt: row.startedAt,
-      finishedAt: row.finishedAt,
-      durationMs: row.durationMs,
-      bytesTotal: row.bytesTotal,
-      fileCount: row.fileCount,
-      errorMessage: row.errorMessage,
-      logPath: row.logPath,
-      dryRun: row.dryRun,
-      createdAt: row.createdAt
-    }
-  })
+export function getRunDto(id: string): TaskRunDto | null {
+  const row = getOrm().select().from(taskRuns).where(eq(taskRuns.id, id)).get()
+  return row ? toDto(row) : null
 }
 
 export function claimPendingRun(runId: string): typeof taskRuns.$inferSelect | null {

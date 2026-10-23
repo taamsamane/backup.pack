@@ -1,7 +1,8 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import type { BackupHubApi, DriverInstallProgress } from '../shared/ipc/api'
+import type { BackupHubApi, DriverInstallProgress, RunLogLineEvent } from '../shared/ipc/api'
 import { IpcChannels } from '../shared/ipc/channels'
 import type { SshHostKeyPrompt } from '../shared/profiles'
+import type { RunProgress } from '../shared/runs'
 import type { AppSettings } from '../shared/settings'
 
 /**
@@ -51,6 +52,26 @@ const api: BackupHubApi = {
     }),
   listTaskRuns: (limit = 100) =>
     ipcRenderer.invoke(IpcChannels.TASKS_LIST_RUNS, { limit }),
+  getTaskRun: (id) => ipcRenderer.invoke(IpcChannels.TASKS_GET_RUN, { id }),
+  getTaskRunLog: (id) => ipcRenderer.invoke(IpcChannels.TASKS_GET_RUN_LOG, { id }),
+  onRunProgress: (handler) => {
+    const listener = (_event: IpcRendererEvent, progress: RunProgress): void => {
+      handler(progress)
+    }
+    ipcRenderer.on(IpcChannels.TASKS_RUN_PROGRESS, listener)
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.TASKS_RUN_PROGRESS, listener)
+    }
+  },
+  onRunLogLine: (handler) => {
+    const listener = (_event: IpcRendererEvent, event: RunLogLineEvent): void => {
+      handler(event)
+    }
+    ipcRenderer.on(IpcChannels.TASKS_RUN_LOG_LINE, listener)
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.TASKS_RUN_LOG_LINE, listener)
+    }
+  },
   previewSchedule: (schedule, count = 5) =>
     ipcRenderer.invoke(IpcChannels.TASKS_PREVIEW_SCHEDULE, { schedule, count }),
   listUpcomingRuns: (limit = 20) =>

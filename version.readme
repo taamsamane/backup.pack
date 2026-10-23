@@ -2,6 +2,7 @@
 
 ## 2026-10-23
 
+- History: click a run to open a detail panel with live progress bar and terminal-style log stream (persisted run logs + IPC progress/log events).
 - Fixed MySQL/MariaDB dump: prefer `mariadb-dump`, disable client TLS by default (`--ssl=0`) for non-TLS servers; optional profile “Require SSL/TLS”.
 - Fixed Driver Manager install `fetch failed` by downloading via Node https/http (with redirects and clearer network errors) instead of Electron fetch.
 - Phase 7: Driver Manager (download/extract from drivers.taam.shop, SHA-256 meta) + database dump backups (mysqldump, pg_dump, mongodump, sqlpackage .bacpac, SQLite copy) with SSH tunnel support.

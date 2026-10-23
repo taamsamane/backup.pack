@@ -8,6 +8,7 @@ import type {
   SshHostKeyPrompt
 } from '../profiles'
 import type { DriverStatus, DriverToolId } from '../drivers'
+import type { RunLogResponse, RunProgress, TaskRunDto } from '../runs'
 import type { AppSettings } from '../settings'
 import type {
   DashboardScheduleItem,
@@ -18,6 +19,12 @@ import type {
   TaskUpdateInput
 } from '../tasks'
 import type { AppInfo, AppPaths, DbHealth } from './schemas'
+
+export type RunLogLineEvent = {
+  runId: string
+  line: string
+  at: string
+}
 
 export type DriverInstallProgress = {
   toolId: DriverToolId
@@ -60,24 +67,11 @@ export interface BackupHubApi {
     id: string,
     options?: { dryRun?: boolean }
   ) => Promise<{ ok: true; runId: string; dryRun: boolean }>
-  listTaskRuns: (limit?: number) => Promise<
-    Array<{
-      id: string
-      taskId: string
-      taskName: string | null
-      cycleId: string | null
-      status: string
-      startedAt: string | null
-      finishedAt: string | null
-      durationMs: number | null
-      bytesTotal: number | null
-      fileCount: number | null
-      errorMessage: string | null
-      logPath: string | null
-      dryRun: boolean
-      createdAt: string
-    }>
-  >
+  listTaskRuns: (limit?: number) => Promise<TaskRunDto[]>
+  getTaskRun: (id: string) => Promise<TaskRunDto & { latestProgress: RunProgress | null }>
+  getTaskRunLog: (id: string) => Promise<RunLogResponse>
+  onRunProgress: (handler: (progress: RunProgress) => void) => () => void
+  onRunLogLine: (handler: (event: RunLogLineEvent) => void) => () => void
   previewSchedule: (schedule: TaskSchedule, count?: number) => Promise<SchedulePreview>
   listUpcomingRuns: (limit?: number) => Promise<DashboardScheduleItem[]>
   pickDirectory: () => Promise<{ path: string | null }>

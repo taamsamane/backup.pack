@@ -9,8 +9,11 @@ import {
   TaskRunNowSchema,
   TaskUpdateSchema
 } from '../../../shared/tasks'
-import { listRecentRuns } from '../../backup/runsRepo'
+import { readRunLog } from '../../backup/runLog'
+import { getLatestRunProgress } from '../../backup/runProgress'
+import { getRunDto, listRecentRuns } from '../../backup/runsRepo'
 import { getMainWindow } from '../../app/window'
+import { TaskRunIdSchema } from '../../../shared/runs'
 import { parseIpcPayload } from '../../security/ipcValidate'
 import {
   createTask,
@@ -91,6 +94,33 @@ export function registerTasksHandlers(register: IpcRegistrar): void {
         ? Number(parsed.limit ?? 100)
         : 100
     return listRecentRuns(limit)
+  })
+
+  register(IpcChannels.TASKS_GET_RUN, async (payload) => {
+    const { id } = parseIpcPayload(IpcChannels.TASKS_GET_RUN, TaskRunIdSchema, payload)
+    const run = getRunDto(id)
+    if (!run) {
+      throw new Error('Run not found')
+    }
+    return {
+      ...run,
+      latestProgress: getLatestRunProgress(id)
+    }
+  })
+
+  register(IpcChannels.TASKS_GET_RUN_LOG, async (payload) => {
+    const { id } = parseIpcPayload(IpcChannels.TASKS_GET_RUN_LOG, TaskRunIdSchema, payload)
+    const run = getRunDto(id)
+    if (!run) {
+      throw new Error('Run not found')
+    }
+    const log = readRunLog(id)
+    return {
+      runId: id,
+      logPath: log.path ?? run.logPath,
+      content: log.content,
+      exists: log.exists || Boolean(run.logPath)
+    }
   })
 
   register(IpcChannels.TASKS_PREVIEW_SCHEDULE, async (payload) => {

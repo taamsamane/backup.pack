@@ -3,6 +3,7 @@ import type { IpcChannel } from '../../shared/ipc/channels'
 import { getLogger } from '../logging/logger'
 import { toIpcErrorMessage } from '../security/ipcValidate'
 import { registerAppHandlers } from './handlers/appHandlers'
+import { registerDriversHandlers } from './handlers/driversHandlers'
 import { registerProfilesHandlers } from './handlers/profilesHandlers'
 import { registerSettingsHandlers } from './handlers/settingsHandlers'
 import { registerTasksHandlers } from './handlers/tasksHandlers'
@@ -32,5 +33,6 @@ export function registerIpcHandlers(): void {
   registerSettingsHandlers(register)
   registerProfilesHandlers(register)
   registerTasksHandlers(register)
+  registerDriversHandlers(register)
   log.info('IPC handlers registered')
 }

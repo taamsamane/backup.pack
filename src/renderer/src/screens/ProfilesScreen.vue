@@ -44,6 +44,8 @@ const form = reactive({
   authSource: '',
   encrypt: true,
   trustServerCertificate: true,
+  /** MySQL/MariaDB TLS — off by default (common for tunnel/local servers). */
+  ssl: false,
   clearCredentials: false,
   useSshTunnel: false,
   sshTunnelProfileId: ''
@@ -67,6 +69,7 @@ const isAws = computed(() => form.type === 'aws-s3')
 const isFtp = computed(() => form.type === 'ftp')
 const isSshFamily = computed(() => form.type === 'sftp' || form.type === 'ssh')
 const isFileSource = computed(() => form.type === 'sftp' || form.type === 'ftp' || form.type === 'ssh')
+const isMysqlFamily = computed(() => form.type === 'mysql' || form.type === 'mariadb')
 const isDb = computed(() =>
   ['mysql', 'mariadb', 'postgres', 'mssql', 'mongodb'].includes(form.type)
 )
@@ -131,6 +134,7 @@ function resetForm(): void {
   form.authSource = ''
   form.encrypt = true
   form.trustServerCertificate = true
+  form.ssl = false
   form.clearCredentials = false
   form.useSshTunnel = false
   form.sshTunnelProfileId = ''
@@ -177,6 +181,7 @@ function openEdit(profile: ProfileDto): void {
   form.authSource = profile.options.authSource ?? ''
   form.encrypt = profile.options.encrypt ?? true
   form.trustServerCertificate = profile.options.trustServerCertificate ?? true
+  form.ssl = profile.options.ssl ?? false
   form.useSshTunnel = Boolean(profile.options.sshTunnelProfileId)
   form.sshTunnelProfileId = profile.options.sshTunnelProfileId ?? ''
   showForm.value = true
@@ -214,6 +219,9 @@ function buildOptions(): ProfileCreateInput['options'] {
     if (form.type === 'mssql') {
       options.encrypt = form.encrypt
       options.trustServerCertificate = form.trustServerCertificate
+    }
+    if (isMysqlFamily.value) {
+      options.ssl = form.ssl
     }
     if (form.useSshTunnel && form.sshTunnelProfileId) {
       options.sshTunnelProfileId = form.sshTunnelProfileId
@@ -587,6 +595,11 @@ onMounted(() => {
             <span>Trust server certificate</span>
           </label>
         </template>
+
+        <label v-if="isMysqlFamily" class="field checkbox field-wide">
+          <input v-model="form.ssl" type="checkbox" />
+          <span>Require SSL/TLS (leave off for local servers / SSH tunnels without TLS)</span>
+        </label>
 
         <label v-if="editingId" class="field checkbox field-wide">
           <input v-model="form.clearCredentials" type="checkbox" />

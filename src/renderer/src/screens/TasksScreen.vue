@@ -331,7 +331,7 @@ async function toggleEnabled(task: TaskDto): Promise<void> {
   }
 }
 
-/** Queue an immediate real backup (SFTP/FTP/SSH/S3). DB sources wait for Phase 7. */
+/** Queue an immediate real backup (files, S3, or database dump). */
 async function runNow(task: TaskDto): Promise<void> {
   try {
     await getBackupHubApi().runTaskNow(task.id, { dryRun: false })

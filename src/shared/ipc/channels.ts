@@ -31,7 +31,11 @@ export const IpcChannels = {
   TASKS_LIST_RUNS: 'tasks:listRuns',
   TASKS_PREVIEW_SCHEDULE: 'tasks:previewSchedule',
   TASKS_UPCOMING: 'tasks:upcoming',
-  DIALOG_PICK_DIRECTORY: 'dialog:pickDirectory'
+  DIALOG_PICK_DIRECTORY: 'dialog:pickDirectory',
+  DRIVERS_LIST: 'drivers:list',
+  DRIVERS_INSTALL: 'drivers:install',
+  /** Main → renderer progress event */
+  DRIVERS_PROGRESS: 'drivers:progress'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]

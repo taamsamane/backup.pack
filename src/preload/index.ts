@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import type { BackupHubApi } from '../shared/ipc/api'
+import type { BackupHubApi, DriverInstallProgress } from '../shared/ipc/api'
 import { IpcChannels } from '../shared/ipc/channels'
 import type { SshHostKeyPrompt } from '../shared/profiles'
 import type { AppSettings } from '../shared/settings'
@@ -55,7 +55,19 @@ const api: BackupHubApi = {
     ipcRenderer.invoke(IpcChannels.TASKS_PREVIEW_SCHEDULE, { schedule, count }),
   listUpcomingRuns: (limit = 20) =>
     ipcRenderer.invoke(IpcChannels.TASKS_UPCOMING, { limit }),
-  pickDirectory: () => ipcRenderer.invoke(IpcChannels.DIALOG_PICK_DIRECTORY)
+  pickDirectory: () => ipcRenderer.invoke(IpcChannels.DIALOG_PICK_DIRECTORY),
+
+  listDrivers: () => ipcRenderer.invoke(IpcChannels.DRIVERS_LIST),
+  installDriver: (toolId) => ipcRenderer.invoke(IpcChannels.DRIVERS_INSTALL, { toolId }),
+  onDriverProgress: (handler) => {
+    const listener = (_event: IpcRendererEvent, progress: DriverInstallProgress): void => {
+      handler(progress)
+    }
+    ipcRenderer.on(IpcChannels.DRIVERS_PROGRESS, listener)
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.DRIVERS_PROGRESS, listener)
+    }
+  }
 }
 
 contextBridge.exposeInMainWorld('backupHub', api)

@@ -92,7 +92,7 @@ Implemented in the Phase 4 planner/engine (`src/shared/backup/`, `src/main/backu
 2. **`fullBackup=true` with `fullPeriod`** — first run creates a full baseline cycle. Later runs store only changes under timestamped folders (plus `deleted.json`). When the period ends, the next run finalizes the cycle (optional zip into `archives/`, verify, delete unzipped cycle) and starts a new baseline.
 3. **`fullBackup=false`** — after the first baseline, only changes are backed up (no cycle rollover).
 
-**Run now** / scheduled runs transfer for **SFTP, FTP/FTPS, SSH (SFTP), and AWS S3** into the cycle layout. Set `remotePath` on the profile (remote dir or S3 key prefix). S3 profiles need a **bucket**. Exclude patterns skip matching relative paths. Database sources arrive in Phase 7.
+**Run now** / scheduled runs transfer for **SFTP, FTP/FTPS, SSH (SFTP), AWS S3**, and **databases** (MySQL/MariaDB `mysqldump`, Postgres `pg_dump`, MongoDB `mongodump`, MSSQL **sqlpackage `.bacpac`**, SQLite file copy). Install CLI tools from the **Drivers** screen (`drivers.taam.shop`). DB profiles can use an SSH tunnel. Set `remotePath` / S3 prefix as needed; S3 needs a **bucket**.
 
 Target folder layout:
 
@@ -126,8 +126,8 @@ Native modules are rebuilt for Electron (`npmRebuild: true`, `postinstall` → `
 3. Scheduler + task CRUD/wizard
 4. Backup engine core (cycles, manifest, zip, tests)
 5. Server files (SFTP/FTP)
-6. AWS S3 *(current)*
-7. Database adapters + Driver Manager (MSSQL: **sqlpackage `.bacpac` first**; native `.bak` later) — downloads from [drivers.taam.shop](https://drivers.taam.shop/drivers/)
+6. AWS S3
+7. Database adapters + Driver Manager (MSSQL: **sqlpackage `.bacpac` first**; native `.bak` later) — [drivers.taam.shop](https://drivers.taam.shop/drivers/) *(current)*
 8. Restore & verify
 9. Notifications, retention, catch-up, polish
 10. Final packaging + electron-updater
@@ -161,7 +161,8 @@ Full instructions: [`driver-mirror/README.md`](driver-mirror/README.md)
 - Tasks store a wizard schedule (every / daily / weekly / monthly / cron) plus an executable cron expression.
 - Main process runs **croner** jobs (timezone-aware, overrun protection). Each tick enqueues a `pending` `task_runs` row.
 - A backup **worker** claims pending runs (respects `globalConcurrency`), plans the cycle action, and prepares target layout / zip on rollover.
-- Tasks UI: **Run now** queues a real SFTP/FTP/SSH/S3 backup. History lists recent runs.
+- Tasks UI: **Run now** queues a real backup for file, S3, and database sources. History lists recent runs.
+- **Drivers** screen installs sqlpackage / mysqldump / pg_dump / mongodump / 7-Zip from the official mirror into `userData/drivers`.
 - File / S3 profiles: **Remote path** / object prefix (`options.remotePath`) scopes what is backed up; S3 also requires `bucket`.
 
 ## License

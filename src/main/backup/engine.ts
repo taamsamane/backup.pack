@@ -30,7 +30,9 @@ import {
   markCycleFinalizing
 } from './cyclesRepo'
 import { claimPendingRun, finishRun } from './runsRepo'
-import { adapterUnavailableMessage, getSourceAdapter } from './sources'
+import { isDatabaseProfileType } from './db/dump'
+import { transferDatabaseDump } from './dbTransfer'
+import { adapterUnavailableMessage, getSourceAdapter, supportsBackupSource } from './sources'
 import { transferFromSource } from './transfer'
 
 function assertTargetWritable(targetFolder: string): void {
@@ -189,7 +191,8 @@ export async function executeRun(runId: string): Promise<void> {
     ensureTaskLayout(taskRoot)
     lines.push(`taskRoot=${taskRoot}`)
 
-    const adapter = getSourceAdapter(profile.type)
+    const fileAdapter = getSourceAdapter(profile.type)
+    const isDb = isDatabaseProfileType(profile.type)
 
     if (claimed.dryRun) {
       const planPath = join(taskRoot, '.backuphub-last-dry-run.json')
@@ -203,7 +206,7 @@ export async function executeRun(runId: string): Promise<void> {
             reason: plan.reason,
             profileType: profile.type,
             remotePath: profile.options.remotePath ?? '.',
-            adapter: adapter?.kind ?? null,
+            adapter: isDb ? `db:${profile.type}` : (fileAdapter?.kind ?? null),
             settings: {
               fullBackup: settings.fullBackup,
               fullPeriod: settings.fullPeriod ?? null,
@@ -218,10 +221,10 @@ export async function executeRun(runId: string): Promise<void> {
       )
       lines.push(
         `planSnapshot=${planPath}`,
-        adapter
-          ? `adapter=${adapter.kind} ready`
+        supportsBackupSource(profile.type)
+          ? `adapter=${isDb ? `db:${profile.type}` : fileAdapter?.kind} ready`
           : adapterUnavailableMessage(profile.type),
-        'Dry-run OK — no files downloaded'
+        'Dry-run OK — no data transferred'
       )
       const logPath = writeRunLog(runId, lines)
       finishRun({
@@ -237,7 +240,7 @@ export async function executeRun(runId: string): Promise<void> {
       return
     }
 
-    if (!adapter) {
+    if (!supportsBackupSource(profile.type)) {
       const message = adapterUnavailableMessage(profile.type)
       const logPath = writeRunLog(runId, [...lines, message])
       finishRun({
@@ -304,15 +307,23 @@ export async function executeRun(runId: string): Promise<void> {
       throw new Error(`Cannot execute plan action ${plan.action} without a cycle`)
     }
 
-    const transfer = await transferFromSource({
-      profile,
-      plan,
-      taskRoot,
-      cycleFolderName,
-      excludePatterns: settings.excludePatterns ?? [],
-      now,
-      mode: transferMode
-    })
+    const transfer = isDb
+      ? await transferDatabaseDump({
+          profile,
+          taskRoot,
+          cycleFolderName,
+          now,
+          mode: transferMode
+        })
+      : await transferFromSource({
+          profile,
+          plan,
+          taskRoot,
+          cycleFolderName,
+          excludePatterns: settings.excludePatterns ?? [],
+          now,
+          mode: transferMode
+        })
     bytesTotal += transfer.bytes
     fileCount += transfer.fileCount
     lines.push(...transfer.lines)

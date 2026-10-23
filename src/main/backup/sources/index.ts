@@ -5,14 +5,7 @@ import { s3SourceAdapter } from './s3Source'
 import { sftpSourceAdapter } from './sftpSource'
 import type { SourceAdapter } from './types'
 
-const ADAPTER_PHASE: Partial<Record<ProfileType, string>> = {
-  mysql: 'Phase 7',
-  mariadb: 'Phase 7',
-  postgres: 'Phase 7',
-  mssql: 'Phase 7',
-  mongodb: 'Phase 7',
-  sqlite: 'Phase 7'
-}
+const ADAPTER_PHASE: Partial<Record<ProfileType, string>> = {}
 
 export function getSourceAdapter(type: ProfileType): SourceAdapter | null {
   if (type === 'sftp' || type === 'ssh') {
@@ -25,6 +18,13 @@ export function getSourceAdapter(type: ProfileType): SourceAdapter | null {
     return s3SourceAdapter
   }
   return null
+}
+
+export function supportsBackupSource(type: ProfileType): boolean {
+  return (
+    getSourceAdapter(type) != null ||
+    ['mysql', 'mariadb', 'postgres', 'mssql', 'mongodb', 'sqlite'].includes(type)
+  )
 }
 
 export function adapterUnavailableMessage(type: ProfileType): string {

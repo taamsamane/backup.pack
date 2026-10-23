@@ -7,6 +7,7 @@ import type {
   SshHostKeyDecision,
   SshHostKeyPrompt
 } from '../profiles'
+import type { DriverStatus, DriverToolId } from '../drivers'
 import type { AppSettings } from '../settings'
 import type {
   DashboardScheduleItem,
@@ -17,6 +18,13 @@ import type {
   TaskUpdateInput
 } from '../tasks'
 import type { AppInfo, AppPaths, DbHealth } from './schemas'
+
+export type DriverInstallProgress = {
+  toolId: DriverToolId
+  phase: 'download' | 'extract' | 'done'
+  receivedBytes: number
+  totalBytes: number | null
+}
 
 /**
  * Typed surface exposed to the renderer via preload `contextBridge`.
@@ -73,6 +81,10 @@ export interface BackupHubApi {
   previewSchedule: (schedule: TaskSchedule, count?: number) => Promise<SchedulePreview>
   listUpcomingRuns: (limit?: number) => Promise<DashboardScheduleItem[]>
   pickDirectory: () => Promise<{ path: string | null }>
+
+  listDrivers: () => Promise<DriverStatus[]>
+  installDriver: (toolId: DriverToolId) => Promise<DriverStatus>
+  onDriverProgress: (handler: (progress: DriverInstallProgress) => void) => () => void
 }
 
 export type BackupHubApiMethod = keyof BackupHubApi

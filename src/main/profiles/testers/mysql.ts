@@ -11,13 +11,16 @@ export const testMysqlConnection: ConnectionTester = async (profile) => {
       throw new Error('Host is required')
     }
 
+    const useSsl = effective.options.ssl === true
     const connection = await mysql.createConnection({
       host: effective.host,
       port: effective.port ?? DEFAULT_PORTS.mysql,
       user: effective.username ?? undefined,
       password: effective.credentials.password,
       database: effective.options.database,
-      connectTimeout: effective.options.readyTimeoutMs ?? 15_000
+      connectTimeout: effective.options.readyTimeoutMs ?? 15_000,
+      // Match dump behavior: only enable TLS when the profile asks for it.
+      ssl: useSsl ? {} : undefined
     })
 
     try {

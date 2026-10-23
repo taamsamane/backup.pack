@@ -65,6 +65,11 @@ export const ProfileOptionsSchema = z
     encrypt: z.boolean().optional(),
     trustServerCertificate: z.boolean().optional(),
     /**
+     * MySQL / MariaDB: require TLS to the server.
+     * Default false — many local/tunnel servers have no SSL (MariaDB 11 client otherwise errors).
+     */
+    ssl: z.boolean().optional(),
+    /**
      * Optional SSH jump host for DB profiles (mysql/mariadb/postgres/mssql/mongodb).
      * Must reference a saved profile of type `ssh` or `sftp`.
      * Host/port on the DB profile are the destination as reachable FROM the SSH server

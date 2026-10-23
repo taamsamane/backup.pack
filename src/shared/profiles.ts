@@ -50,8 +50,9 @@ export const ProfileOptionsSchema = z
     /** FTP */
     secure: z.boolean().optional(),
     /**
-     * Remote directory to back up (SFTP / FTP / SSH-via-SFTP).
-     * Absolute (`/var/www`) or relative to login home (`.` / `uploads`).
+     * Remote directory / key prefix to back up.
+     * - SFTP / FTP / SSH: absolute (`/var/www`) or relative to login home (`.` / `uploads`).
+     * - AWS S3: object key prefix (e.g. `backups/prod`); empty / `.` = whole bucket.
      */
     remotePath: z.string().trim().min(1).max(1024).optional(),
     /** SSH/SFTP readyTimeout ms */

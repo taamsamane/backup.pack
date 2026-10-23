@@ -1,5 +1,9 @@
 # Version history
 
+## 2026-10-23
+
+- Phase 6: AWS S3 / S3-compatible source adapter — list objects by prefix, download into cycle layout, ETag-aware manifests; profile bucket + optional object prefix (`remotePath`).
+
 ## 2026-10-22
 
 - Phase 5: SFTP / FTP / SSH-via-SFTP source adapters — recursive list + download into baseline/changes, exclude patterns, `remotePath` on file profiles; **Run now** performs a real transfer for those types.

@@ -4,10 +4,12 @@ import type { ResolvedProfile } from '../../profiles/testers/types'
 export type RemoteFileInfo = {
   /** Path relative to the backup remote root (manifest key). */
   relativePath: string
-  /** Absolute/normalized path on the remote server. */
+  /** Absolute/normalized path on the remote server (or S3 object key). */
   remotePath: string
   size: number
   mtime: Date | null
+  /** S3 ETag when available (used for change detection). */
+  etag?: string | null
 }
 
 export type SourceListResult = {
@@ -36,7 +38,7 @@ export function remoteFileToManifestEntry(file: RemoteFileInfo): ManifestEntry {
     size: file.size,
     mtime: file.mtime ? file.mtime.toISOString() : null,
     hash: null,
-    etag: null,
+    etag: file.etag ?? null,
     state: 'present'
   }
 }

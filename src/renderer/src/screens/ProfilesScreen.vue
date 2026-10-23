@@ -182,7 +182,11 @@ function buildOptions(): ProfileCreateInput['options'] {
       endpoint: form.endpoint || undefined,
       forcePathStyle: form.forcePathStyle || undefined,
       awsProfile: form.authMethod === 'aws-profile' ? form.awsProfile : undefined,
-      bucket: form.bucket || undefined
+      bucket: form.bucket || undefined,
+      remotePath:
+        form.remotePath.trim() && form.remotePath.trim() !== '.'
+          ? form.remotePath.trim()
+          : undefined
     }
   }
   const options: NonNullable<ProfileCreateInput['options']> = {}
@@ -503,8 +507,17 @@ onMounted(() => {
             <input v-model="form.region" type="text" />
           </label>
           <label class="field">
-            <span>Bucket (optional for test)</span>
+            <span>Bucket (required for backups)</span>
             <input v-model="form.bucket" type="text" />
+          </label>
+          <label class="field field-wide">
+            <span>Object prefix (optional)</span>
+            <input
+              v-model="form.remotePath"
+              type="text"
+              placeholder="backups/prod or leave empty for whole bucket"
+            />
+            <span class="hint">Only objects under this key prefix are backed up.</span>
           </label>
           <label class="field field-wide">
             <span>Custom endpoint (MinIO / S3-compatible)</span>

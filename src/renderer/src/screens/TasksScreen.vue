@@ -331,7 +331,7 @@ async function toggleEnabled(task: TaskDto): Promise<void> {
   }
 }
 
-/** Queue an immediate real backup (SFTP/FTP/SSH). Other profile types fail until later phases. */
+/** Queue an immediate real backup (SFTP/FTP/SSH/S3). DB sources wait for Phase 7. */
 async function runNow(task: TaskDto): Promise<void> {
   try {
     await getBackupHubApi().runTaskNow(task.id, { dryRun: false })
@@ -420,7 +420,7 @@ const canGoNext = computed(() => {
                 <button
                   type="button"
                   class="btn"
-                  title="Queue an immediate backup from the source profile"
+                  title="Queue an immediate backup (SFTP, FTP, SSH, or S3)"
                   @click="runNow(task)"
                 >
                   Run now

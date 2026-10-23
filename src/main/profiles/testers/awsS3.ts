@@ -1,37 +1,11 @@
-import { HeadBucketCommand, ListBucketsCommand, S3Client } from '@aws-sdk/client-s3'
-import { fromIni } from '@aws-sdk/credential-providers'
+import { HeadBucketCommand, ListBucketsCommand } from '@aws-sdk/client-s3'
+import { createS3ClientFromProfile } from '../awsClient'
 import type { ConnectionTester } from './types'
 
 export const testAwsS3Connection: ConnectionTester = async (profile) => {
   const started = Date.now()
   const region = profile.options.region ?? 'us-east-1'
-
-  let credentials:
-    | { accessKeyId: string; secretAccessKey: string; sessionToken?: string }
-    | ReturnType<typeof fromIni>
-    | undefined
-
-  if (profile.authMethod === 'aws-keys') {
-    if (!profile.credentials.accessKeyId || !profile.credentials.secretAccessKey) {
-      throw new Error('AWS access key and secret are required')
-    }
-    credentials = {
-      accessKeyId: profile.credentials.accessKeyId,
-      secretAccessKey: profile.credentials.secretAccessKey,
-      sessionToken: profile.credentials.sessionToken
-    }
-  } else if (profile.authMethod === 'aws-profile') {
-    credentials = fromIni({ profile: profile.options.awsProfile ?? 'default' })
-  } else {
-    throw new Error(`Unsupported AWS auth method: ${profile.authMethod}`)
-  }
-
-  const client = new S3Client({
-    region,
-    credentials,
-    endpoint: profile.options.endpoint,
-    forcePathStyle: profile.options.forcePathStyle ?? Boolean(profile.options.endpoint)
-  })
+  const client = createS3ClientFromProfile(profile)
 
   try {
     const bucket = profile.options.bucket

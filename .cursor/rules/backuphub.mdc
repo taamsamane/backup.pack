@@ -1,0 +1,54 @@
+---
+description: BackupHub project conventions for Electron main/preload/renderer work
+alwaysApply: true
+---
+
+# BackupHub conventions
+
+## Architecture
+
+- Electron + TypeScript + electron-vite + Vue 3.
+- Strict process split: `src/main` (Node/Electron), `src/preload` (bridged API only), `src/renderer` (sandboxed UI), `src/shared` (types, Zod schemas, constants).
+- `contextIsolation: true`, `nodeIntegration: false` on BrowserWindow. Keep `sandbox: false` while using electron-vite’s bundled CJS preload (`sandbox: true` prevents preload from loading).
+- Renderer talks to main only through `window.backupHub` (typed preload API).
+
+## IPC
+
+- Channel names live in `src/shared/ipc/channels.ts`.
+- Validate **every** IPC payload with Zod schemas from `src/shared/ipc/schemas.ts`.
+- Never expose raw `ipcRenderer` or Node APIs to the renderer.
+
+## Security
+
+- Encrypt stored credentials (user/password/private key/AWS secrets) with Electron `safeStorage` (never keytar, never plaintext in SQLite).
+- SSH/SFTP host keys go in `ssh_host_keys` (TOFU + fingerprint UI). Host-key verification and credential encryption are both mandatory and solve different problems.
+- DB profiles may set `options.sshTunnelProfileId` to an SSH/SFTP profile; use `withOptionalSshTunnel` for tests and future backups (never put DB passwords on the SSH command line).
+- Never log secrets; use pino redaction paths.
+- Never build shell commands from strings; use `spawn` with an args array.
+- Never pass passwords on the command line; use env vars or temporary option files that are deleted after use.
+
+## Data
+
+- App state in better-sqlite3 under `userData/data/backuphub.sqlite`, accessed only through **Drizzle ORM** (`src/main/db/schema.ts`, `getDb()` / `getOrm()`).
+- Schema changes: edit `schema.ts`, run `npm run db:generate`, commit `/drizzle`. Runtime applies migrations via drizzle migrator (folder `drizzle/` in dev, `resources/drizzle` when packaged).
+- Do not write ad-hoc SQL for CRUD; use the Drizzle query builder. Raw SQL only for rare pragmas/health checks.
+- Native module rebuild: `npm run rebuild` / `electron-builder install-app-deps`.
+
+## MSSQL
+
+- Prioritize **sqlpackage `.bacpac`** (client-side export). Native `.bak` via SFTP/share is secondary/later.
+- Driver packages for re-hosting live under `driver-mirror/` (Python downloader + SHA-256 manifest).
+
+## Backup semantics (document in README when implementing)
+
+- `fullBackup=true`, no `fullPeriod`: every run is a complete backup.
+- `fullBackup=true` + `fullPeriod`: cycle baseline + change folders; rollover zips then starts a new baseline.
+- `fullBackup=false`: changes after the first baseline (no cycle rollover).
+
+## Quality
+
+- No TODOs or placeholder implementations in shipped code.
+- Unit-test scheduler, cycle rollover, change detection, and retention with a fake clock.
+- Cross-platform paths via `src/shared/paths.ts` (Windows long-path aware).
+- Update `version.readme` for every project change.
+- After each roadmap phase: stop, summarize, wait for confirmation.

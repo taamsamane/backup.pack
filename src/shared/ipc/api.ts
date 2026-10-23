@@ -1,0 +1,78 @@
+import type {
+  ConnectionTestResult,
+  ProfileCreateInput,
+  ProfileDto,
+  ProfileTestInput,
+  ProfileUpdateInput,
+  SshHostKeyDecision,
+  SshHostKeyPrompt
+} from '../profiles'
+import type { AppSettings } from '../settings'
+import type {
+  DashboardScheduleItem,
+  SchedulePreview,
+  TaskCreateInput,
+  TaskDto,
+  TaskSchedule,
+  TaskUpdateInput
+} from '../tasks'
+import type { AppInfo, AppPaths, DbHealth } from './schemas'
+
+/**
+ * Typed surface exposed to the renderer via preload `contextBridge`.
+ * Every method maps 1:1 to a validated IPC channel.
+ */
+export interface BackupHubApi {
+  getAppInfo: () => Promise<AppInfo>
+  getAppPaths: () => Promise<AppPaths>
+  quit: () => Promise<void>
+  showMainWindow: () => Promise<void>
+  hideToTray: () => Promise<void>
+  getDbHealth: () => Promise<DbHealth>
+  getAllSettings: () => Promise<AppSettings>
+  getSetting: <K extends keyof AppSettings>(key: K) => Promise<AppSettings[K]>
+  setSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => Promise<AppSettings>
+  setSettings: (values: Partial<AppSettings>) => Promise<AppSettings>
+
+  listProfiles: () => Promise<ProfileDto[]>
+  getProfile: (id: string) => Promise<ProfileDto>
+  createProfile: (input: ProfileCreateInput) => Promise<ProfileDto>
+  updateProfile: (input: ProfileUpdateInput) => Promise<ProfileDto>
+  deleteProfile: (id: string) => Promise<{ ok: true }>
+  testProfile: (input: ProfileTestInput) => Promise<ConnectionTestResult>
+  decideSshHostKey: (decision: SshHostKeyDecision) => Promise<{ ok: true }>
+  onSshHostKeyPrompt: (handler: (prompt: SshHostKeyPrompt) => void) => () => void
+
+  listTasks: () => Promise<TaskDto[]>
+  getTask: (id: string) => Promise<TaskDto>
+  createTask: (input: TaskCreateInput) => Promise<TaskDto>
+  updateTask: (input: TaskUpdateInput) => Promise<TaskDto>
+  deleteTask: (id: string) => Promise<{ ok: true }>
+  runTaskNow: (
+    id: string,
+    options?: { dryRun?: boolean }
+  ) => Promise<{ ok: true; runId: string; dryRun: boolean }>
+  listTaskRuns: (limit?: number) => Promise<
+    Array<{
+      id: string
+      taskId: string
+      taskName: string | null
+      cycleId: string | null
+      status: string
+      startedAt: string | null
+      finishedAt: string | null
+      durationMs: number | null
+      bytesTotal: number | null
+      fileCount: number | null
+      errorMessage: string | null
+      logPath: string | null
+      dryRun: boolean
+      createdAt: string
+    }>
+  >
+  previewSchedule: (schedule: TaskSchedule, count?: number) => Promise<SchedulePreview>
+  listUpcomingRuns: (limit?: number) => Promise<DashboardScheduleItem[]>
+  pickDirectory: () => Promise<{ path: string | null }>
+}
+
+export type BackupHubApiMethod = keyof BackupHubApi

@@ -1,0 +1,29 @@
+# Version history
+
+## 2026-10-22
+
+- Phase 5: SFTP / FTP / SSH-via-SFTP source adapters — recursive list + download into baseline/changes, exclude patterns, `remotePath` on file profiles; **Run now** performs a real transfer for those types.
+- Phase 4: backup engine core — run planner (full/period/changes/rollover), cycle layout + manifest, zip finalize, retention prune, worker that claims pending runs; History screen lists runs.
+- Tasks: **Run now** queues a real backup for SFTP/FTP/SSH (other sources wait for later phases).
+- Phase 3: task CRUD wizard (source/target, schedule, backup settings), croner scheduler with timezone next-run previews, Dashboard upcoming runs, and pending run queue for Phase 4.
+- Official driver mirror set to https://drivers.taam.shop/drivers/ (`src/shared/driversMirror.ts`, `driver-mirror/HOSTED_LINKS.json`).
+- Fixed SSH Test Connection handshake timeouts caused by the host-key trust dialog racing a 15s readyTimeout; interactive SSH waits up to 2 minutes and focuses the Trust dialog.
+- Database profiles (MySQL/MariaDB/Postgres/MSSQL/MongoDB) can connect via an SSH/SFTP jump-host profile (local port forward + Test Connection).
+
+## 2026-10-21
+
+- Migrated local SQLite access to Drizzle ORM (schema, migrator in `/drizzle`, typed settings/health queries).
+- Fixed missing `window.backupHub` by setting `webPreferences.sandbox: false` (electron-vite bundled preload is incompatible with Electron process sandbox).
+- Fixed Linux Electron startup when `chrome-sandbox` lacks root/SUID (default `--no-sandbox` on Linux; optional SUID setup documented).
+- Fixed Vue template typing so `window.backupHub` calls run from script helpers (vue-tsc clean).
+- Added `driver-mirror/` Python packager to download official CLI drivers (sqlpackage, MongoDB tools, PostgreSQL, MariaDB/mysqldump, 7-Zip) with SHA-256 manifests for re-hosting.
+- Confirmed MSSQL strategy: prioritize sqlpackage `.bacpac` (client-side); native `.bak` deferred.
+- Switched renderer UI from React to Vue 3 (`@vitejs/plugin-vue`, `vue-tsc`).
+- Documented that SSH host-key trust (`ssh_host_keys`) and safeStorage credential encryption are both required for server connections.
+- Phase 1 scaffold: electron-vite + Vue 3 + TypeScript BackupHub app shell.
+- Secure IPC skeleton with Zod validation, typed preload `window.backupHub` API.
+- better-sqlite3 database with initial migrations (profiles, tasks, runs, cycles, manifests, settings, SSH host keys).
+- Pino rotating file logging under userData/logs.
+- System tray, single-instance lock, close-to-tray, and Settings screen persistence.
+- electron-builder targets: NSIS (Windows), DMG (macOS), AppImage + deb (Linux).
+- Vitest unit tests for paths, settings schemas, and IPC channel invariants.

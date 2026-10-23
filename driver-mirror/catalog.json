@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "description": "Official upstream packages BackupHub Driver Manager will consume after you re-host them.",
+  "notes": [
+    "SQLite needs no external driver (bundled better-sqlite3).",
+    "MSSQL primary path is sqlpackage (.bacpac export). Native .bak via SFTP/share is deferred.",
+    "MariaDB packages provide mysqldump/mysql for MySQL and MariaDB servers.",
+    "macOS has no official MariaDB bintar in this catalog — use PATH/Homebrew or add a manual asset later."
+  ],
+  "tools": [
+    {
+      "id": "sqlpackage",
+      "name": "Microsoft SqlPackage",
+      "version": "170.4.83.3",
+      "purpose": "MSSQL .bacpac export/import (client-side)",
+      "homepage": "https://learn.microsoft.com/sql/tools/sqlpackage/sqlpackage-download",
+      "license": "Microsoft SqlPackage / DacFx terms",
+      "binaries": {
+        "linux-x64": ["sqlpackage"],
+        "darwin-x64": ["sqlpackage"],
+        "win-x64": ["sqlpackage.exe"]
+      },
+      "artifacts": [
+        {
+          "platform": "linux-x64",
+          "url": "https://aka.ms/sqlpackage-linux",
+          "filename": "sqlpackage-linux-x64.zip"
+        },
+        {
+          "platform": "darwin-x64",
+          "url": "https://aka.ms/sqlpackage-macos",
+          "filename": "sqlpackage-osx-x64.zip"
+        },
+        {
+          "platform": "win-x64",
+          "url": "https://aka.ms/sqlpackage-windows",
+          "filename": "sqlpackage-win-x64.zip"
+        }
+      ]
+    },
+    {
+      "id": "mongodb-database-tools",
+      "name": "MongoDB Database Tools",
+      "version": "100.11.0",
+      "purpose": "mongodump / mongorestore",
+      "homepage": "https://www.mongodb.com/docs/database-tools/",
+      "license": "Apache-2.0 / MongoDB SSPL (see package)",
+      "binaries": {
+        "linux-x64": ["bin/mongodump", "bin/mongorestore"],
+        "darwin-x64": ["bin/mongodump", "bin/mongorestore"],
+        "darwin-arm64": ["bin/mongodump", "bin/mongorestore"],
+        "win-x64": ["bin/mongodump.exe", "bin/mongorestore.exe"]
+      },
+      "artifacts": [
+        {
+          "platform": "linux-x64",
+          "url": "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.11.0.tgz",
+          "filename": "mongodb-database-tools-linux-x64-100.11.0.tgz"
+        },
+        {
+          "platform": "darwin-x64",
+          "url": "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-macos-x86_64-100.11.0.zip",
+          "filename": "mongodb-database-tools-macos-x64-100.11.0.zip"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-macos-arm64-100.11.0.zip",
+          "filename": "mongodb-database-tools-macos-arm64-100.11.0.zip"
+        },
+        {
+          "platform": "win-x64",
+          "url": "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.11.0.zip",
+          "filename": "mongodb-database-tools-windows-x64-100.11.0.zip"
+        }
+      ]
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL client binaries",
+      "version": "18.6.1",
+      "purpose": "pg_dump / pg_restore / psql",
+      "homepage": "https://github.com/theseus-rs/postgresql-binaries",
+      "license": "PostgreSQL License",
+      "binaries": {
+        "linux-x64": ["bin/pg_dump", "bin/pg_restore", "bin/psql"],
+        "linux-arm64": ["bin/pg_dump", "bin/pg_restore", "bin/psql"],
+        "darwin-x64": ["bin/pg_dump", "bin/pg_restore", "bin/psql"],
+        "darwin-arm64": ["bin/pg_dump", "bin/pg_restore", "bin/psql"],
+        "win-x64": ["bin/pg_dump.exe", "bin/pg_restore.exe", "bin/psql.exe"]
+      },
+      "artifacts": [
+        {
+          "platform": "linux-x64",
+          "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.6.1/postgresql-18.6.1-x86_64-unknown-linux-gnu.tar.gz",
+          "filename": "postgresql-18.6.1-linux-x64.tar.gz"
+        },
+        {
+          "platform": "linux-arm64",
+          "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.6.1/postgresql-18.6.1-aarch64-unknown-linux-gnu.tar.gz",
+          "filename": "postgresql-18.6.1-linux-arm64.tar.gz"
+        },
+        {
+          "platform": "darwin-x64",
+          "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.6.1/postgresql-18.6.1-x86_64-apple-darwin.tar.gz",
+          "filename": "postgresql-18.6.1-darwin-x64.tar.gz"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.6.1/postgresql-18.6.1-aarch64-apple-darwin.tar.gz",
+          "filename": "postgresql-18.6.1-darwin-arm64.tar.gz"
+        },
+        {
+          "platform": "win-x64",
+          "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.6.1/postgresql-18.6.1-x86_64-pc-windows-msvc.zip",
+          "filename": "postgresql-18.6.1-win-x64.zip"
+        }
+      ]
+    },
+    {
+      "id": "mariadb",
+      "name": "MariaDB server+client binaries (includes mysqldump)",
+      "version": "11.4.5",
+      "purpose": "mysqldump / mysql for MySQL and MariaDB",
+      "homepage": "https://archive.mariadb.org/",
+      "license": "GPL-2.0",
+      "binaries": {
+        "linux-x64": ["bin/mysqldump", "bin/mysql"],
+        "win-x64": ["bin/mysqldump.exe", "bin/mysql.exe"]
+      },
+      "artifacts": [
+        {
+          "platform": "linux-x64",
+          "url": "https://archive.mariadb.org/mariadb-11.4.5/bintar-linux-systemd-x86_64/mariadb-11.4.5-linux-systemd-x86_64.tar.gz",
+          "filename": "mariadb-11.4.5-linux-x64.tar.gz"
+        },
+        {
+          "platform": "win-x64",
+          "url": "https://archive.mariadb.org/mariadb-11.4.5/winx64-packages/mariadb-11.4.5-winx64.zip",
+          "filename": "mariadb-11.4.5-win-x64.zip"
+        }
+      ]
+    },
+    {
+      "id": "7zip",
+      "name": "7-Zip",
+      "version": "25.01",
+      "purpose": "Optional AES-256 archive encryption",
+      "homepage": "https://www.7-zip.org/",
+      "license": "LGPL / BSD 7-Zip license",
+      "binaries": {
+        "linux-x64": ["7zz"],
+        "linux-arm64": ["7zz"],
+        "darwin-arm64": ["7zz"],
+        "win-x64": ["7z.exe"]
+      },
+      "artifacts": [
+        {
+          "platform": "linux-x64",
+          "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-linux-x64.tar.xz",
+          "filename": "7z2501-linux-x64.tar.xz"
+        },
+        {
+          "platform": "linux-arm64",
+          "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-linux-arm64.tar.xz",
+          "filename": "7z2501-linux-arm64.tar.xz"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-mac.tar.xz",
+          "filename": "7z2501-mac.tar.xz"
+        },
+        {
+          "platform": "win-x64",
+          "url": "https://github.com/ip7z/7zip/releases/download/25.01/7z2501-x64.exe",
+          "filename": "7z2501-x64.exe"
+        }
+      ]
+    }
+  ]
+}

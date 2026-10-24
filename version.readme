@@ -2,6 +2,8 @@
 
 ## 2026-10-24
 
+- Sidebar nav fills the window height; Settings (and Hide to tray) stay fixed at the bottom.
+- Added backup.pack logo in the sidebar (same main logo for light and dark).
 - Phase 8: Restore & verify — browse task cycles, point-in-time file restore to a folder, unzip archived cycles on demand, and verify archive zip integrity.
 
 ## 2026-10-23

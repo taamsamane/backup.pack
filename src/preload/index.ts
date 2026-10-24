@@ -88,7 +88,19 @@ const api: BackupHubApi = {
     return () => {
       ipcRenderer.removeListener(IpcChannels.DRIVERS_PROGRESS, listener)
     }
-  }
+  },
+
+  listRestoreTasks: () => ipcRenderer.invoke(IpcChannels.RESTORE_LIST_TASKS),
+  listRestoreCycles: (taskId) =>
+    ipcRenderer.invoke(IpcChannels.RESTORE_LIST_CYCLES, { taskId }),
+  browseRestoreCycle: (cycleId, asOfStamp) =>
+    ipcRenderer.invoke(IpcChannels.RESTORE_BROWSE, {
+      cycleId,
+      ...(asOfStamp ? { asOfStamp } : {})
+    }),
+  restoreCycleFiles: (input) => ipcRenderer.invoke(IpcChannels.RESTORE_FILES, input),
+  verifyRestoreArchive: (cycleId) =>
+    ipcRenderer.invoke(IpcChannels.RESTORE_VERIFY, { cycleId })
 }
 
 contextBridge.exposeInMainWorld('backupHub', api)

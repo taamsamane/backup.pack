@@ -320,6 +320,15 @@ select {
   color: var(--danger);
 }
 
+.ok-banner {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--ok) 45%, var(--border));
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  color: var(--ok);
+}
+
 .phase-note {
   color: var(--text-muted);
   line-height: 1.5;

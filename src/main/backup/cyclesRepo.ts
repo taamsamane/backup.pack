@@ -32,6 +32,10 @@ export function listCyclesForTask(taskId: string): Array<typeof cycles.$inferSel
     .all()
 }
 
+export function getCycleById(cycleId: string): typeof cycles.$inferSelect | null {
+  return getOrm().select().from(cycles).where(eq(cycles.id, cycleId)).get() ?? null
+}
+
 export function createActiveCycle(input: {
   taskId: string
   folderName: string

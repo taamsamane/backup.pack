@@ -41,7 +41,12 @@ export const IpcChannels = {
   DRIVERS_LIST: 'drivers:list',
   DRIVERS_INSTALL: 'drivers:install',
   /** Main → renderer progress event */
-  DRIVERS_PROGRESS: 'drivers:progress'
+  DRIVERS_PROGRESS: 'drivers:progress',
+  RESTORE_LIST_TASKS: 'restore:listTasks',
+  RESTORE_LIST_CYCLES: 'restore:listCycles',
+  RESTORE_BROWSE: 'restore:browse',
+  RESTORE_FILES: 'restore:files',
+  RESTORE_VERIFY: 'restore:verify'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]

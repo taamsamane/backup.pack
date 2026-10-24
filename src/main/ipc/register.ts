@@ -5,6 +5,7 @@ import { toIpcErrorMessage } from '../security/ipcValidate'
 import { registerAppHandlers } from './handlers/appHandlers'
 import { registerDriversHandlers } from './handlers/driversHandlers'
 import { registerProfilesHandlers } from './handlers/profilesHandlers'
+import { registerRestoreHandlers } from './handlers/restoreHandlers'
 import { registerSettingsHandlers } from './handlers/settingsHandlers'
 import { registerTasksHandlers } from './handlers/tasksHandlers'
 
@@ -34,5 +35,6 @@ export function registerIpcHandlers(): void {
   registerProfilesHandlers(register)
   registerTasksHandlers(register)
   registerDriversHandlers(register)
+  registerRestoreHandlers(register)
   log.info('IPC handlers registered')
 }

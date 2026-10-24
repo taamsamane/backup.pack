@@ -1,5 +1,9 @@
 # Version history
 
+## 2026-10-24
+
+- Phase 8: Restore & verify — browse task cycles, point-in-time file restore to a folder, unzip archived cycles on demand, and verify archive zip integrity.
+
 ## 2026-10-23
 
 - History: click a run to open a detail panel with live progress bar and terminal-style log stream (persisted run logs + IPC progress/log events).

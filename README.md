@@ -128,7 +128,7 @@ Native modules are rebuilt for Electron (`npmRebuild: true`, `postinstall` → `
 5. Server files (SFTP/FTP)
 6. AWS S3
 7. Database adapters + Driver Manager (MSSQL: **sqlpackage `.bacpac` first**; native `.bak` later) — [drivers.taam.shop](https://drivers.taam.shop/drivers/) *(current)*
-8. Restore & verify
+8. Restore & verify — [done] browse cycles, point-in-time file restore, archive verify
 9. Notifications, retention, catch-up, polish
 10. Final packaging + electron-updater
 
@@ -164,6 +164,15 @@ Full instructions: [`driver-mirror/README.md`](driver-mirror/README.md)
 - Tasks UI: **Run now** queues a real backup for file, S3, and database sources. History lists recent runs.
 - **Drivers** screen installs sqlpackage / mysqldump / pg_dump / mongodump / 7-Zip from the official mirror into `userData/drivers`.
 - File / S3 profiles: **Remote path** / object prefix (`options.remotePath`) scopes what is backed up; S3 also requires `bucket`.
+
+### Restore & verify (Phase 8)
+
+- **Restore** screen: pick a task → cycle → optional change stamp (point in time).
+- Browse the effective file set (baseline + ordered `changes/<stamp>`, applying `deleted.json`).
+- **Restore to folder…** copies that snapshot into a user-chosen directory (path-traversal safe).
+- Archived cycles are unzipped on demand when the cycle folder was removed after zip.
+- **Verify archive** opens the zip central directory (size + entry walk) without a full extract.
+- Database dumps are treated as files in Phase 8; importing into a live server is deferred.
 
 ## License
 

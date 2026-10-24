@@ -8,6 +8,12 @@ import type {
   SshHostKeyPrompt
 } from '../profiles'
 import type { DriverStatus, DriverToolId } from '../drivers'
+import type {
+  CycleRestoreDto,
+  RestoreBrowseResult,
+  RestoreFilesResult,
+  RestoreVerifyResult
+} from '../restore'
 import type { RunLogResponse, RunProgress, TaskRunDto } from '../runs'
 import type { AppSettings } from '../settings'
 import type {
@@ -79,6 +85,19 @@ export interface BackupHubApi {
   listDrivers: () => Promise<DriverStatus[]>
   installDriver: (toolId: DriverToolId) => Promise<DriverStatus>
   onDriverProgress: (handler: (progress: DriverInstallProgress) => void) => () => void
+
+  listRestoreTasks: () => Promise<
+    Array<{ id: string; name: string; targetFolder: string; profileName: string | null }>
+  >
+  listRestoreCycles: (taskId: string) => Promise<CycleRestoreDto[]>
+  browseRestoreCycle: (cycleId: string, asOfStamp?: string) => Promise<RestoreBrowseResult>
+  restoreCycleFiles: (input: {
+    cycleId: string
+    destPath: string
+    asOfStamp?: string
+    paths?: string[]
+  }) => Promise<RestoreFilesResult>
+  verifyRestoreArchive: (cycleId: string) => Promise<RestoreVerifyResult>
 }
 
 export type BackupHubApiMethod = keyof BackupHubApi

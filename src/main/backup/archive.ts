@@ -1,7 +1,9 @@
-import { createWriteStream, existsSync } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, statSync } from 'fs'
 import { readdir, stat } from 'fs/promises'
 import { join } from 'path'
 import { ZipArchive } from 'archiver'
+import extractZip from 'extract-zip'
+import yauzl from 'yauzl'
 import { joinOsPath } from '../../shared/paths'
 import { getLogger } from '../logging/logger'
 
@@ -69,4 +71,91 @@ export function archiveFileName(
 
 export function archivePathFor(archivesDirPath: string, fileName: string): string {
   return joinOsPath(archivesDirPath, fileName)
+}
+
+/**
+ * Extract a cycle zip into destDir (created if needed). Zip entries are cycle-relative
+ * (baseline/, changes/, manifest.json).
+ */
+export async function unzipCycleArchive(archivePath: string, destDir: string): Promise<void> {
+  if (!existsSync(archivePath)) {
+    throw new Error(`Archive not found: ${archivePath}`)
+  }
+  mkdirSync(destDir, { recursive: true })
+  await extractZip(archivePath, { dir: destDir })
+}
+
+export type ZipVerifyResult = {
+  ok: boolean
+  bytes: number | null
+  entryCount: number | null
+  errors: string[]
+}
+
+/**
+ * Open a zip and walk central directory entries.
+ * Does not fully decompress every file; fails on corrupt/unreadable archives.
+ */
+export function verifyZipArchive(archivePath: string): Promise<ZipVerifyResult> {
+  return new Promise((resolve) => {
+    const errors: string[] = []
+    if (!existsSync(archivePath)) {
+      resolve({ ok: false, bytes: null, entryCount: null, errors: ['Archive file not found'] })
+      return
+    }
+    let bytes: number | null = null
+    try {
+      bytes = statSync(archivePath).size
+      if (bytes === 0) {
+        resolve({ ok: false, bytes: 0, entryCount: 0, errors: ['Archive is empty (0 bytes)'] })
+        return
+      }
+    } catch (err) {
+      resolve({
+        ok: false,
+        bytes: null,
+        entryCount: null,
+        errors: [err instanceof Error ? err.message : String(err)]
+      })
+      return
+    }
+
+    yauzl.open(archivePath, { lazyEntries: true, autoClose: true }, (openErr, zipfile) => {
+      if (openErr || !zipfile) {
+        resolve({
+          ok: false,
+          bytes,
+          entryCount: null,
+          errors: [openErr?.message ?? 'Failed to open zip']
+        })
+        return
+      }
+
+      let entryCount = 0
+      zipfile.readEntry()
+      zipfile.on('entry', (entry) => {
+        entryCount += 1
+        if (
+          entry.fileName.includes('..') ||
+          entry.fileName.startsWith('/') ||
+          entry.fileName.startsWith('\\')
+        ) {
+          errors.push(`Unsafe zip entry path: ${entry.fileName}`)
+        }
+        zipfile.readEntry()
+      })
+      zipfile.on('end', () => {
+        resolve({
+          ok: errors.length === 0,
+          bytes,
+          entryCount,
+          errors
+        })
+      })
+      zipfile.on('error', (err) => {
+        errors.push(err.message)
+        resolve({ ok: false, bytes, entryCount, errors })
+      })
+    })
+  })
 }

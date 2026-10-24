@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { Cron } from 'croner'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
+import { shouldCatchUpMissedRun } from '../../shared/backup/catchUp'
 import { normalizeSchedule } from '../../shared/schedule'
 import type { TaskSchedule } from '../../shared/tasks'
 import { notifyRunQueued } from '../backup/worker'
@@ -17,7 +18,7 @@ type JobEntry = {
 const jobs = new Map<string, JobEntry>()
 let started = false
 
-export type EnqueueReason = 'schedule' | 'manual'
+export type EnqueueReason = 'schedule' | 'manual' | 'catchup'
 
 /**
  * Enqueue a run. The backup worker claims `pending` rows.
@@ -80,6 +81,46 @@ function stopJob(taskId: string): void {
   jobs.delete(taskId)
 }
 
+function maybeCatchUp(taskId: string, job: Cron, catchUpMissed: boolean): void {
+  if (!catchUpMissed) {
+    return
+  }
+  const previousFireAt = job.previousRun() ?? null
+  const last = getOrm()
+    .select()
+    .from(taskRuns)
+    .where(eq(taskRuns.taskId, taskId))
+    .orderBy(desc(taskRuns.createdAt))
+    .limit(1)
+    .get()
+  const lastRunCreatedAt = last?.createdAt ? new Date(last.createdAt) : null
+  if (
+    !shouldCatchUpMissedRun({
+      catchUpMissed,
+      previousFireAt,
+      lastRunCreatedAt
+    })
+  ) {
+    return
+  }
+  try {
+    const runId = enqueueScheduledRun(taskId, 'catchup')
+    getLogger('scheduler').info(
+      {
+        taskId,
+        runId,
+        previousFireAt: previousFireAt?.toISOString() ?? null
+      },
+      'Catch-up run enqueued'
+    )
+  } catch (error) {
+    getLogger('scheduler').error(
+      { taskId, err: error instanceof Error ? error.message : String(error) },
+      'Failed to enqueue catch-up run'
+    )
+  }
+}
+
 function startJob(taskId: string, schedule: TaskSchedule, catchUpMissed: boolean): void {
   stopJob(taskId)
   const normalized = normalizeSchedule(schedule)
@@ -114,6 +155,7 @@ function startJob(taskId: string, schedule: TaskSchedule, catchUpMissed: boolean
     },
     'Scheduled task'
   )
+  maybeCatchUp(taskId, job, catchUpMissed)
 }
 
 export function rescheduleTask(taskId: string): void {

@@ -46,7 +46,13 @@ export const IpcChannels = {
   RESTORE_LIST_CYCLES: 'restore:listCycles',
   RESTORE_BROWSE: 'restore:browse',
   RESTORE_FILES: 'restore:files',
-  RESTORE_VERIFY: 'restore:verify'
+  RESTORE_VERIFY: 'restore:verify',
+  APP_CHECK_UPDATE: 'app:checkUpdate',
+  APP_DOWNLOAD_UPDATE: 'app:downloadUpdate',
+  APP_QUIT_AND_INSTALL: 'app:quitAndInstall',
+  APP_GET_UPDATE_STATUS: 'app:getUpdateStatus',
+  /** Main → renderer */
+  APP_UPDATE_STATUS: 'app:updateStatus'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]

@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent
 CATALOG_PATH = ROOT / "catalog.json"
 OUT_DIR = ROOT / "out"
 USER_AGENT = (
-    "BackupHub-DriverMirror/0.1 (+https://github.com/backuphub/backuphub; Python urllib)"
+    "BackupHub-DriverMirror/0.1 (+https://github.com/taamsamane/backup.pack; Python urllib)"
 )
 CHUNK = 1024 * 256
 

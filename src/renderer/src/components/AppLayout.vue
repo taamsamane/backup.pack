@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { getBackupHubApi } from '../api'
+import { useI18n } from '../i18n'
 import type { ScreenId } from '../types'
-import logo from '../assets/logo.png'
+import logoIcon from '../assets/logo-icon.png'
 
 defineProps<{
   screen: ScreenId
@@ -11,14 +13,20 @@ const emit = defineEmits<{
   navigate: [screen: ScreenId]
 }>()
 
-const navItems: Array<{ id: ScreenId; label: string }> = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'profiles', label: 'Connection Profiles' },
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'history', label: 'Run History' },
-  { id: 'restore', label: 'Restore' },
-  { id: 'drivers', label: 'Drivers' }
-]
+const { t, locale } = useI18n()
+
+const navItems = computed(() => {
+  // locale dependency so labels refresh when language changes
+  void locale.value
+  return [
+    { id: 'dashboard' as const, label: t('nav.dashboard') },
+    { id: 'profiles' as const, label: t('nav.profiles') },
+    { id: 'tasks' as const, label: t('nav.tasks') },
+    { id: 'history' as const, label: t('nav.history') },
+    { id: 'restore' as const, label: t('nav.restore') },
+    { id: 'drivers' as const, label: t('nav.drivers') }
+  ]
+})
 
 function hideToTray(): void {
   void getBackupHubApi().hideToTray()
@@ -27,9 +35,9 @@ function hideToTray(): void {
 
 <template>
   <div class="app-shell">
-    <nav class="nav" aria-label="Primary">
+    <nav class="nav" :aria-label="t('nav.primary')">
       <div class="brand">
-        <img class="brand-logo" :src="logo" alt="backup.pack" width="168" height="118" />
+        <img class="brand-logo" :src="logoIcon" alt="backup.pack" width="128" height="128" />
       </div>
       <div class="nav-main">
         <button
@@ -50,9 +58,11 @@ function hideToTray(): void {
           :class="{ active: screen === 'settings' }"
           @click="emit('navigate', 'settings')"
         >
-          Settings
+          {{ t('nav.settings') }}
         </button>
-        <button type="button" class="nav-button" @click="hideToTray">Hide to tray</button>
+        <button type="button" class="nav-button" @click="hideToTray">
+          {{ t('nav.hideToTray') }}
+        </button>
       </div>
     </nav>
     <main class="content">

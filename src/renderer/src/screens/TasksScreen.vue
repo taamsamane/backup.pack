@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { ProfileDto } from '../../../shared/profiles'
 import type {
   ScheduleMode,
@@ -10,6 +10,10 @@ import type {
   TaskSchedule
 } from '../../../shared/tasks'
 import { getBackupHubApi } from '../api'
+import RunSpinner from '../components/RunSpinner.vue'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const tasks = ref<TaskDto[]>([])
 const profiles = ref<ProfileDto[]>([])
@@ -21,6 +25,13 @@ const saving = ref(false)
 const step = ref(1)
 const preview = ref<SchedulePreview | null>(null)
 const previewError = ref<string | null>(null)
+/** taskId → runId while a manual/queued run is in progress */
+const runningByTask = ref<Record<string, string>>({})
+let unsubRunProgress: (() => void) | null = null
+
+function isTaskRunning(taskId: string): boolean {
+  return Boolean(runningByTask.value[taskId])
+}
 
 const WEEKDAYS = [
   { value: 0, label: 'Sun' },
@@ -203,7 +214,31 @@ async function refresh(): Promise<void> {
 }
 
 onMounted(() => {
+  unsubRunProgress = getBackupHubApi().onRunProgress((p) => {
+    const entries = Object.entries(runningByTask.value)
+    const match = entries.find(([, runId]) => runId === p.runId)
+    if (!match) {
+      return
+    }
+    const [taskId] = match
+    const done =
+      p.percent >= 100 ||
+      p.status === 'success' ||
+      p.status === 'failed' ||
+      p.status === 'cancelled' ||
+      p.status === 'dry_run'
+    if (done) {
+      const next = { ...runningByTask.value }
+      delete next[taskId]
+      runningByTask.value = next
+      void refresh()
+    }
+  })
   void refresh()
+})
+
+onUnmounted(() => {
+  unsubRunProgress?.()
 })
 
 watch(
@@ -333,8 +368,12 @@ async function toggleEnabled(task: TaskDto): Promise<void> {
 
 /** Queue an immediate real backup (files, S3, or database dump). */
 async function runNow(task: TaskDto): Promise<void> {
+  if (isTaskRunning(task.id)) {
+    return
+  }
   try {
-    await getBackupHubApi().runTaskNow(task.id, { dryRun: false })
+    const result = await getBackupHubApi().runTaskNow(task.id, { dryRun: false })
+    runningByTask.value = { ...runningByTask.value, [task.id]: result.runId }
     await refresh()
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err)
@@ -366,21 +405,23 @@ const canGoNext = computed(() => {
 <template>
   <div>
     <header class="page-header">
-      <h1>Tasks</h1>
-      <p>Link a source profile, target folder, schedule, and backup settings.</p>
+      <h1>{{ t('tasks.title') }}</h1>
+      <p>{{ t('tasks.subtitle') }}</p>
     </header>
 
     <div v-if="error" class="error-banner">{{ error }}</div>
 
     <div class="btn-row" style="margin-bottom: 1rem">
       <button type="button" class="btn btn-primary" :disabled="profiles.length === 0" @click="openCreate">
-        New task
+        {{ t('tasks.newTask') }}
       </button>
-      <button type="button" class="btn" :disabled="loading" @click="refresh">Refresh</button>
+      <button type="button" class="btn" :disabled="loading" @click="refresh">
+        {{ t('common.refresh') }}
+      </button>
     </div>
 
     <p v-if="profiles.length === 0" class="phase-note">
-      Create a connection profile first, then add a backup task.
+      {{ t('tasks.needProfile') }}
     </p>
 
     <section v-if="!showWizard" class="panel">
@@ -420,10 +461,13 @@ const canGoNext = computed(() => {
                 <button
                   type="button"
                   class="btn"
+                  :class="{ 'btn-running': isTaskRunning(task.id) }"
+                  :disabled="isTaskRunning(task.id)"
                   title="Queue an immediate backup (SFTP, FTP, SSH, or S3)"
                   @click="runNow(task)"
                 >
-                  Run now
+                  <RunSpinner v-if="isTaskRunning(task.id)" />
+                  {{ isTaskRunning(task.id) ? t('tasks.running') : t('tasks.runNow') }}
                 </button>
                 <button type="button" class="btn btn-danger" @click="removeTask(task)">Delete</button>
               </div>
@@ -475,7 +519,7 @@ const canGoNext = computed(() => {
         </label>
         <label class="field checkbox">
           <input v-model="form.catchUpMissed" type="checkbox" />
-          <span>Catch up missed runs (applied in Phase 9)</span>
+          <span>{{ t('tasks.catchUp') }}</span>
         </label>
       </div>
 
@@ -741,5 +785,27 @@ const canGoNext = computed(() => {
 .data-table th {
   color: var(--text-muted);
   font-weight: 600;
+}
+
+.btn-running {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: run-pulse 1.4s ease-out infinite;
+}
+
+@keyframes run-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 </style>

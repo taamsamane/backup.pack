@@ -31,6 +31,7 @@ import {
 } from './cyclesRepo'
 import { isDatabaseProfileType } from './db/dump'
 import { transferDatabaseDump } from './dbTransfer'
+import { notifyBackupFinished } from '../app/notifications'
 import { openRunLog } from './runLog'
 import { clearRunProgress, emitRunProgress } from './runProgress'
 import { claimPendingRun, finishRun } from './runsRepo'
@@ -106,6 +107,12 @@ function applyRetention(taskId: string, keepCycles: number | undefined, taskRoot
     all.map((c) => ({ id: c.id, startedAt: c.startedAt, status: c.status })),
     keepCycles
   )
+  if (pruneIds.length > 0) {
+    getLogger('engine').info(
+      { taskId, keepCycles, pruned: pruneIds.length, cycleIds: pruneIds },
+      'Retention pruning cycles'
+    )
+  }
   for (const id of pruneIds) {
     const row = all.find((c) => c.id === id)
     if (!row) {
@@ -274,6 +281,7 @@ export async function executeRun(runId: string): Promise<void> {
         errorMessage: null
       })
       progress(runId, taskId, taskName, 'dry_run', 100, 'done', 'Dry-run completed')
+      notifyBackupFinished({ taskName, status: 'dry_run' })
       log.info({ runId, taskId: task.id }, 'Dry-run completed')
       return
     }
@@ -289,6 +297,7 @@ export async function executeRun(runId: string): Promise<void> {
         errorMessage: message
       })
       progress(runId, taskId, taskName, 'failed', 100, 'error', message)
+      notifyBackupFinished({ taskName, status: 'failed', errorMessage: message })
       return
     }
 
@@ -407,6 +416,7 @@ export async function executeRun(runId: string): Promise<void> {
       bytesTotal,
       fileCount
     })
+    notifyBackupFinished({ taskName, status: 'success' })
     log.info(
       { runId, taskId: task.id, profileType: profile.type, fileCount, bytesTotal },
       'Run succeeded'
@@ -422,6 +432,7 @@ export async function executeRun(runId: string): Promise<void> {
       logPath: session.path
     })
     progress(runId, taskId, taskName, 'failed', 100, 'error', message)
+    notifyBackupFinished({ taskName, status: 'failed', errorMessage: message })
     log.error({ runId, err: message }, 'Run failed')
   } finally {
     // Keep last progress snapshot for History until a later clear; optional cleanup:

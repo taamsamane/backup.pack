@@ -24,6 +24,7 @@ import type {
   TaskSchedule,
   TaskUpdateInput
 } from '../tasks'
+import type { UpdateStatus } from '../updates'
 import type { AppInfo, AppPaths, DbHealth } from './schemas'
 
 export type RunLogLineEvent = {
@@ -49,6 +50,11 @@ export interface BackupHubApi {
   quit: () => Promise<void>
   showMainWindow: () => Promise<void>
   hideToTray: () => Promise<void>
+  getUpdateStatus: () => Promise<UpdateStatus>
+  checkForUpdates: () => Promise<UpdateStatus>
+  downloadUpdate: () => Promise<UpdateStatus>
+  quitAndInstallUpdate: () => Promise<{ ok: true }>
+  onUpdateStatus: (handler: (status: UpdateStatus) => void) => () => void
   getDbHealth: () => Promise<DbHealth>
   getAllSettings: () => Promise<AppSettings>
   getSetting: <K extends keyof AppSettings>(key: K) => Promise<AppSettings[K]>

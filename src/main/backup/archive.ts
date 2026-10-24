@@ -1,11 +1,13 @@
-import { createWriteStream, existsSync, mkdirSync, statSync } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'fs'
 import { readdir, stat } from 'fs/promises'
-import { join } from 'path'
+import { basename, dirname, join } from 'path'
 import { ZipArchive } from 'archiver'
 import extractZip from 'extract-zip'
 import yauzl from 'yauzl'
 import { joinOsPath } from '../../shared/paths'
+import { requireDriverBinary } from '../drivers/resolve'
 import { getLogger } from '../logging/logger'
+import { spawnToolOrThrow } from './spawnTool'
 
 async function walkFiles(root: string, base = root): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true })
@@ -22,8 +24,9 @@ async function walkFiles(root: string, base = root): Promise<string[]> {
 }
 
 /**
- * Zip a cycle directory into archives/. Uses archiver (deflate).
- * Password encryption is deferred until 7-Zip driver integration (Phase 7/9).
+ * Zip a cycle directory into archives/.
+ * With a password, uses the installed 7-Zip driver (AES-256 zip).
+ * Without a password, uses archiver (deflate).
  */
 export async function zipCycleFolder(input: {
   cyclePath: string
@@ -33,26 +36,50 @@ export async function zipCycleFolder(input: {
   if (!existsSync(input.cyclePath)) {
     throw new Error(`Cycle folder missing: ${input.cyclePath}`)
   }
-  if (input.password) {
-    getLogger('archive').warn(
-      'Archive password set but AES zip via archiver is unavailable; writing unencrypted zip (7-Zip encryption lands with Driver Manager)'
-    )
-  }
 
   const files = await walkFiles(input.cyclePath)
-  await new Promise<void>((resolve, reject) => {
-    const output = createWriteStream(input.archivePath)
-    const archive = new ZipArchive({ zlib: { level: 9 } })
-    output.on('close', () => resolve())
-    output.on('error', reject)
-    archive.on('error', reject)
-    archive.pipe(output)
-    for (const file of files) {
-      const name = file.slice(input.cyclePath.length).replace(/^[/\\]/, '')
-      archive.file(file, { name })
-    }
-    void archive.finalize()
-  })
+  mkdirSync(dirname(input.archivePath), { recursive: true })
+  if (existsSync(input.archivePath)) {
+    rmSync(input.archivePath, { force: true })
+  }
+
+  if (input.password) {
+    // 7-Zip requires -p on argv; spawnTool never logs args. Install 7-Zip from Drivers first.
+    const binName = process.platform === 'win32' ? '7z.exe' : '7zz'
+    const bin = requireDriverBinary('7zip', binName)
+    await spawnToolOrThrow({
+      bin,
+      args: [
+        'a',
+        '-tzip',
+        '-mem=AES256',
+        `-p${input.password}`,
+        '-y',
+        input.archivePath,
+        basename(input.cyclePath)
+      ],
+      cwd: dirname(input.cyclePath),
+      label: '7-Zip encrypt'
+    })
+    getLogger('archive').info(
+      { archivePath: input.archivePath, fileCount: files.length, encrypted: true },
+      'Encrypted zip written via 7-Zip'
+    )
+  } else {
+    await new Promise<void>((resolve, reject) => {
+      const output = createWriteStream(input.archivePath)
+      const archive = new ZipArchive({ zlib: { level: 9 } })
+      output.on('close', () => resolve())
+      output.on('error', reject)
+      archive.on('error', reject)
+      archive.pipe(output)
+      for (const file of files) {
+        const name = file.slice(input.cyclePath.length).replace(/^[/\\]/, '')
+        archive.file(file, { name })
+      }
+      void archive.finalize()
+    })
+  }
 
   const st = await stat(input.archivePath)
   return { bytes: st.size, fileCount: files.length }

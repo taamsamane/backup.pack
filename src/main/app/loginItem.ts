@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import { getLogger } from '../logging/logger'
+import { applyLinuxAutostart } from './linuxAutostart'
 
 /**
  * Sync OS login-item / open-at-login with the stored setting.
@@ -8,9 +9,7 @@ export function applyLaunchOnLogin(enabled: boolean): void {
   const log = getLogger('loginItem')
 
   if (process.platform === 'linux') {
-    // Electron login items are best-supported on Windows/macOS.
-    // Linux desktop autostart will be handled in a later polish phase if needed.
-    log.info({ enabled }, 'launchOnLogin requested (Linux: deferred to settings UI note)')
+    applyLinuxAutostart(enabled)
     return
   }
 

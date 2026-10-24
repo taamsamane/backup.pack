@@ -3,7 +3,8 @@ import { dirname, join } from 'path'
 import { app } from 'electron'
 import { count, eq } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { DEFAULT_SETTINGS, type AppSettings } from '../../shared/settings'
+import { normalizeAppLocale } from '../../shared/i18n'
+import { AppSettingsSchema, DEFAULT_SETTINGS, type AppSettings } from '../../shared/settings'
 import { getLogger } from '../logging/logger'
 import {
   bindOrm,
@@ -80,9 +81,12 @@ export function getAllSettingsFromDb(): AppSettings {
   const rows = db.select().from(settings).all()
   const result: Record<string, unknown> = { ...DEFAULT_SETTINGS }
   for (const row of rows) {
-    result[row.key] = JSON.parse(row.valueJson)
+    if (row.key in DEFAULT_SETTINGS) {
+      result[row.key] = JSON.parse(row.valueJson)
+    }
   }
-  return result as AppSettings
+  result.language = normalizeAppLocale(String(result.language ?? 'en'))
+  return AppSettingsSchema.parse(result)
 }
 
 export function getSettingFromDb<K extends keyof AppSettings>(key: K): AppSettings[K] {

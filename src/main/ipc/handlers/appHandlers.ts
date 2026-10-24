@@ -3,16 +3,22 @@ import { join } from 'path'
 import { IpcChannels } from '../../../shared/ipc/channels'
 import { EmptyPayloadSchema } from '../../../shared/ipc/schemas'
 import {
-  getDatabasePath,
-  getDbHealthSnapshot
-} from '../../db/database'
-import { getLogsDirectory } from '../../logging/logger'
-import { parseIpcPayload } from '../../security/ipcValidate'
+  checkForUpdates,
+  downloadUpdate,
+  getUpdateStatus,
+  quitAndInstallUpdate
+} from '../../app/updater'
 import {
   hideMainWindowToTray,
   setIntentionallyQuitting,
   showMainWindow
 } from '../../app/window'
+import {
+  getDatabasePath,
+  getDbHealthSnapshot
+} from '../../db/database'
+import { getLogsDirectory } from '../../logging/logger'
+import { parseIpcPayload } from '../../security/ipcValidate'
 import type { IpcRegistrar } from '../register'
 
 export function registerAppHandlers(register: IpcRegistrar): void {
@@ -60,5 +66,26 @@ export function registerAppHandlers(register: IpcRegistrar): void {
   register(IpcChannels.DB_HEALTH, async (payload) => {
     parseIpcPayload(IpcChannels.DB_HEALTH, EmptyPayloadSchema, payload)
     return getDbHealthSnapshot()
+  })
+
+  register(IpcChannels.APP_GET_UPDATE_STATUS, async (payload) => {
+    parseIpcPayload(IpcChannels.APP_GET_UPDATE_STATUS, EmptyPayloadSchema, payload)
+    return getUpdateStatus()
+  })
+
+  register(IpcChannels.APP_CHECK_UPDATE, async (payload) => {
+    parseIpcPayload(IpcChannels.APP_CHECK_UPDATE, EmptyPayloadSchema, payload)
+    return checkForUpdates()
+  })
+
+  register(IpcChannels.APP_DOWNLOAD_UPDATE, async (payload) => {
+    parseIpcPayload(IpcChannels.APP_DOWNLOAD_UPDATE, EmptyPayloadSchema, payload)
+    return downloadUpdate()
+  })
+
+  register(IpcChannels.APP_QUIT_AND_INSTALL, async (payload) => {
+    parseIpcPayload(IpcChannels.APP_QUIT_AND_INSTALL, EmptyPayloadSchema, payload)
+    quitAndInstallUpdate()
+    return { ok: true as const }
   })
 }

@@ -9,6 +9,9 @@ import {
   type ProfileType
 } from '../../../shared/profiles'
 import { getBackupHubApi } from '../api'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const profiles = ref<ProfileDto[]>([])
 const loading = ref(true)
@@ -363,15 +366,19 @@ onMounted(() => {
 <template>
   <div>
     <header class="page-header">
-      <h1>Connection Profiles</h1>
-      <p>Reusable sources with secrets encrypted via Electron safeStorage.</p>
+      <h1>{{ t('profiles.title') }}</h1>
+      <p>{{ t('profiles.subtitle') }}</p>
     </header>
 
     <div v-if="error" class="error-banner">{{ error }}</div>
 
     <div class="btn-row" style="margin-top: 0">
-      <button type="button" class="btn btn-primary" @click="openCreate">New profile</button>
-      <button type="button" class="btn" :disabled="loading" @click="refresh">Refresh</button>
+      <button type="button" class="btn btn-primary" @click="openCreate">
+        {{ t('profiles.newProfile') }}
+      </button>
+      <button type="button" class="btn" :disabled="loading" @click="refresh">
+        {{ t('common.refresh') }}
+      </button>
     </div>
 
     <section class="panel" style="margin-top: 1rem">

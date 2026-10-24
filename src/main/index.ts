@@ -2,9 +2,11 @@ import { app, BrowserWindow } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { mkdirSync } from 'fs'
 import { join } from 'path'
+import { ensureNotificationAppName } from './app/notifications'
 import { acquireSingleInstanceLock } from './app/singleInstance'
 import { applyLaunchOnLogin } from './app/loginItem'
 import { createTray, destroyTray } from './app/tray'
+import { initAutoUpdater } from './app/updater'
 import { createMainWindow, setIntentionallyQuitting } from './app/window'
 import { closeDatabase, getAllSettingsFromDb, initDatabase } from './db/database'
 import { registerIpcHandlers } from './ipc/register'
@@ -60,6 +62,8 @@ async function bootstrap(): Promise<void> {
     startBackupWorker()
     createTray()
     createMainWindow()
+    ensureNotificationAppName()
+    initAutoUpdater({ checkOnStartup: settings.checkUpdatesOnStartup })
 
     app.on('browser-window-created', (_event, window) => {
       optimizer.watchWindowShortcuts(window)

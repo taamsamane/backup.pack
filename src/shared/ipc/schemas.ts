@@ -15,7 +15,10 @@ export const SettingsKeySchema = z.enum([
   'launchOnLogin',
   'closeToTray',
   'globalConcurrency',
-  'logLevel'
+  'logLevel',
+  'notifyOnSuccess',
+  'notifyOnFailure',
+  'checkUpdatesOnStartup'
 ])
 
 export const SettingsGetPayloadSchema = z.object({

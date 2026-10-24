@@ -54,6 +54,17 @@ export function createMainWindow(): BrowserWindow {
     log.info('Main window ready')
   })
 
+  mainWindow.on('minimize', () => {
+    try {
+      if (getSettingFromDb('minimizeToTray')) {
+        mainWindow?.hide()
+        log.info('Main window minimized to tray')
+      }
+    } catch {
+      // ignore
+    }
+  })
+
   mainWindow.on('close', (event) => {
     if (intentionallyQuitting) {
       return
@@ -99,6 +110,9 @@ export function showMainWindow(): void {
   }
   mainWindow.show()
   mainWindow.focus()
+  if (process.platform === 'win32' || process.platform === 'linux') {
+    mainWindow.setSkipTaskbar(false)
+  }
 }
 
 export function hideMainWindowToTray(): void {

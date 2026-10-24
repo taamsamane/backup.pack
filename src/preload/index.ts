@@ -4,6 +4,7 @@ import { IpcChannels } from '../shared/ipc/channels'
 import type { SshHostKeyPrompt } from '../shared/profiles'
 import type { RunProgress } from '../shared/runs'
 import type { AppSettings } from '../shared/settings'
+import type { UpdateStatus } from '../shared/updates'
 
 /**
  * Sandboxed preload bridge. Renderer never gets Node or Electron internals.
@@ -14,6 +15,19 @@ const api: BackupHubApi = {
   quit: () => ipcRenderer.invoke(IpcChannels.APP_QUIT),
   showMainWindow: () => ipcRenderer.invoke(IpcChannels.APP_SHOW_MAIN_WINDOW),
   hideToTray: () => ipcRenderer.invoke(IpcChannels.WINDOW_HIDE_TO_TRAY),
+  getUpdateStatus: () => ipcRenderer.invoke(IpcChannels.APP_GET_UPDATE_STATUS),
+  checkForUpdates: () => ipcRenderer.invoke(IpcChannels.APP_CHECK_UPDATE),
+  downloadUpdate: () => ipcRenderer.invoke(IpcChannels.APP_DOWNLOAD_UPDATE),
+  quitAndInstallUpdate: () => ipcRenderer.invoke(IpcChannels.APP_QUIT_AND_INSTALL),
+  onUpdateStatus: (handler) => {
+    const listener = (_event: IpcRendererEvent, status: UpdateStatus): void => {
+      handler(status)
+    }
+    ipcRenderer.on(IpcChannels.APP_UPDATE_STATUS, listener)
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.APP_UPDATE_STATUS, listener)
+    }
+  },
   getDbHealth: () => ipcRenderer.invoke(IpcChannels.DB_HEALTH),
   getAllSettings: () => ipcRenderer.invoke(IpcChannels.SETTINGS_GET_ALL),
   getSetting: <K extends keyof AppSettings>(key: K) =>

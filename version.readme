@@ -2,6 +2,12 @@
 
 ## 2026-10-24
 
+- Pointed package homepage, electron-updater publish, and release feed at https://github.com/taamsamane/backup.pack.
+- Multi-language UI: English and Persian (فارسی) with automatic RTL layout for `fa` (and future Arabic-script locales).
+- Phase 10: electron-updater (GitHub Releases) with Settings check/download/install; packaging publish config.
+- Phase 9: desktop notifications, catch-up missed runs, minimize-to-tray, Linux autostart, 7-Zip encrypted archives, retention prune logging.
+- Startup splash screen with animated logo; Run now shows a spinner until the backup finishes; History progress bar animates while a run is live.
+- App/tray/installer icons and sidebar brand use the official icon-only mark (box + sync, no wordmark).
 - Sidebar nav fills the window height; Settings (and Hide to tray) stay fixed at the bottom.
 - Added backup.pack logo in the sidebar (same main logo for light and dark).
 - Phase 8: Restore & verify — browse task cycles, point-in-time file restore to a folder, unzip archived cycles on demand, and verify archive zip integrity.

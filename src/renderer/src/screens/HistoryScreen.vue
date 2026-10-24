@@ -2,6 +2,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { RunProgress, TaskRunDto } from '../../../shared/runs'
 import { getBackupHubApi } from '../api'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const runs = ref<TaskRunDto[]>([])
 const loading = ref(true)
@@ -161,15 +164,19 @@ onUnmounted(() => {
 <template>
   <div>
     <header class="page-header">
-      <h1>Run History</h1>
-      <p>Click a run for live progress and terminal logs.</p>
+      <h1>{{ t('history.title') }}</h1>
+      <p>{{ t('history.subtitle') }}</p>
     </header>
 
     <div v-if="error" class="error-banner">{{ error }}</div>
 
     <div class="btn-row" style="margin-bottom: 1rem">
-      <button type="button" class="btn" :disabled="loading" @click="refresh">Refresh</button>
-      <button v-if="selectedId" type="button" class="btn" @click="closeDetail">Close detail</button>
+      <button type="button" class="btn" :disabled="loading" @click="refresh">
+        {{ t('common.refresh') }}
+      </button>
+      <button v-if="selectedId" type="button" class="btn" @click="closeDetail">
+        {{ t('history.closeDetail') }}
+      </button>
     </div>
 
     <div class="history-layout" :class="{ 'has-detail': Boolean(selectedId) }">
@@ -362,6 +369,26 @@ onUnmounted(() => {
   height: 100%;
   background: var(--accent);
   transition: width 0.25s ease;
+}
+
+.progress-fill:not(.ok):not(.err) {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 70%, transparent),
+    var(--accent),
+    color-mix(in srgb, var(--accent) 70%, transparent)
+  );
+  background-size: 200% 100%;
+  animation: progress-sheen 1.2s linear infinite;
+}
+
+@keyframes progress-sheen {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 .progress-fill.ok {

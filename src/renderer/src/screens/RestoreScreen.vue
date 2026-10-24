@@ -6,6 +6,9 @@ import type {
   RestoreVerifyResult
 } from '../../../shared/restore'
 import { getBackupHubApi } from '../api'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 type RestoreTaskOption = {
   id: string
@@ -162,11 +165,8 @@ onMounted(() => {
 <template>
   <div>
     <header class="page-header">
-      <h1>Restore</h1>
-      <p>
-        Browse cycles, restore files to a folder at a point in time, and verify archive zips.
-        Database dumps are restored as files (import into a live server is not automated yet).
-      </p>
+      <h1>{{ t('restore.title') }}</h1>
+      <p>{{ t('restore.subtitle') }}</p>
     </header>
 
     <div v-if="error" class="error-banner">{{ error }}</div>

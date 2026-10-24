@@ -127,10 +127,10 @@ Native modules are rebuilt for Electron (`npmRebuild: true`, `postinstall` → `
 4. Backup engine core (cycles, manifest, zip, tests)
 5. Server files (SFTP/FTP)
 6. AWS S3
-7. Database adapters + Driver Manager (MSSQL: **sqlpackage `.bacpac` first**; native `.bak` later) — [drivers.taam.shop](https://drivers.taam.shop/drivers/) *(current)*
-8. Restore & verify — [done] browse cycles, point-in-time file restore, archive verify
-9. Notifications, retention, catch-up, polish
-10. Final packaging + electron-updater
+7. Database adapters + Driver Manager (MSSQL: **sqlpackage `.bacpac` first**; native `.bak` later) — [drivers.taam.shop](https://drivers.taam.shop/drivers/)
+8. Restore & verify — browse cycles, point-in-time file restore, archive verify
+9. Notifications, retention, catch-up, polish — [done]
+10. Final packaging + electron-updater — [done]
 
 ## Project layout
 
@@ -173,6 +173,20 @@ Full instructions: [`driver-mirror/README.md`](driver-mirror/README.md)
 - Archived cycles are unzipped on demand when the cycle folder was removed after zip.
 - **Verify archive** opens the zip central directory (size + entry walk) without a full extract.
 - Database dumps are treated as files in Phase 8; importing into a live server is deferred.
+
+### Notifications, catch-up, polish (Phase 9)
+
+- Desktop notifications on backup success/failure (Settings toggles; failure on by default).
+- **Catch up missed runs**: when enabled, scheduler enqueues **one** catch-up if the previous cron fire had no run while the app was offline.
+- Cycle retention (`keepCycles`) already prunes archived cycles after each successful run (logged).
+- Minimize-to-tray honored; Linux launch-on-login via `~/.config/autostart/BackupHub.desktop`.
+- Encrypted archives use the installed **7-Zip** driver (`Drivers` screen) with AES-256 zip.
+
+### Packaging & updates (Phase 10)
+
+- `electron-builder` targets: NSIS / DMG / AppImage + deb → `release/`.
+- `electron-updater` checks GitHub Releases (`taamsamane/backup.pack`); Settings → Check / Download / Restart & install.
+- Local feed stub: `dev-app-update.yml`. Code signing / notarization remain optional for your release pipeline.
 
 ## License
 

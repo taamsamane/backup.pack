@@ -65,4 +65,10 @@ deb:
 npmRebuild: true
 electronLanguages:
   - en
-publish: null
+# Releases feed for electron-updater (override with GH_TOKEN / publish config as needed).
+publish:
+  provider: github
+  owner: taamsamane
+  repo: backup.pack
+  releaseType: release
+

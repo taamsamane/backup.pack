@@ -3,6 +3,9 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import type { AppInfo, AppPaths, DbHealth } from '../../../shared/ipc/schemas'
 import type { DashboardScheduleItem } from '../../../shared/tasks'
 import { getBackupHubApi } from '../api'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const info = ref<AppInfo | null>(null)
 const paths = ref<AppPaths | null>(null)
@@ -55,33 +58,33 @@ onUnmounted(() => {
 <template>
   <div>
     <header class="page-header">
-      <h1>Dashboard</h1>
-      <p>Local app status, database health, and upcoming runs.</p>
+      <h1>{{ t('dashboard.title') }}</h1>
+      <p>{{ t('dashboard.subtitle') }}</p>
     </header>
 
     <div v-if="error" class="error-banner">{{ error }}</div>
 
     <section class="panel">
-      <h2>Application</h2>
+      <h2>{{ t('dashboard.application') }}</h2>
       <div v-if="info" class="grid-2">
         <div class="kv">
-          <span class="kv-label">Version</span>
+          <span class="kv-label">{{ t('dashboard.version') }}</span>
           <span class="kv-value">{{ info.version }}</span>
         </div>
         <div class="kv">
-          <span class="kv-label">Platform</span>
+          <span class="kv-label">{{ t('dashboard.platform') }}</span>
           <span class="kv-value">{{ info.platform }}/{{ info.arch }}</span>
         </div>
         <div class="kv">
-          <span class="kv-label">Electron</span>
+          <span class="kv-label">{{ t('dashboard.electron') }}</span>
           <span class="kv-value">{{ info.electron }}</span>
         </div>
         <div class="kv">
-          <span class="kv-label">Node</span>
+          <span class="kv-label">{{ t('dashboard.node') }}</span>
           <span class="kv-value">{{ info.node }}</span>
         </div>
       </div>
-      <p v-else class="muted">Loading…</p>
+      <p v-else class="muted">{{ t('common.loading') }}</p>
     </section>
 
     <section class="panel">

@@ -3,6 +3,9 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import type { DriverStatus, DriverToolId } from '../../../shared/drivers'
 import type { DriverInstallProgress } from '../../../shared/ipc/api'
 import { getBackupHubApi } from '../api'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const drivers = ref<DriverStatus[]>([])
 const loading = ref(true)
@@ -75,11 +78,8 @@ onUnmounted(() => {
 <template>
   <div>
     <header class="page-header">
-      <h1>Drivers</h1>
-      <p>
-        Download CLI tools from
-        <code>drivers.taam.shop</code> into userData/drivers (SHA-256 recorded on install).
-      </p>
+      <h1>{{ t('drivers.title') }}</h1>
+      <p>{{ t('drivers.subtitle') }}</p>
     </header>
 
     <div v-if="error" class="error-banner">{{ error }}</div>

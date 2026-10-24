@@ -1,0 +1,4 @@
+# Local updater feed for packaged smoke tests (electron-updater).
+# Point at a static folder or release CDN that hosts latest*.yml + artifacts.
+provider: generic
+url: https://github.com/taamsamane/backup.pack/releases/latest/download/

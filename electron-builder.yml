@@ -70,5 +70,5 @@ publish:
   provider: github
   owner: taamsamane
   repo: backup.pack
-  releaseType: release
+  releaseType: prerelease
 

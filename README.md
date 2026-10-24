@@ -188,6 +188,20 @@ Full instructions: [`driver-mirror/README.md`](driver-mirror/README.md)
 - `electron-updater` checks GitHub Releases (`taamsamane/backup.pack`); Settings → Check / Download / Restart & install.
 - Local feed stub: `dev-app-update.yml`. Code signing / notarization remain optional for your release pipeline.
 
+**Cross-building note:** native modules (`better-sqlite3`) cannot be cross-compiled. On Linux you can only `npm run dist:linux`. Windows/macOS installers are built in CI (`.github/workflows/release.yml`) on `windows-latest` / `macos-latest`.
+
+```bash
+# Local (current OS only)
+npm run dist:linux   # on Linux
+npm run dist:win     # on Windows
+npm run dist:mac     # on macOS
+
+# All platforms: push a tag (creates a GitHub pre-release)
+git tag v0.1.0-beta
+git push origin v0.1.0-beta
+# or: Actions → Release → Run workflow
+```
+
 ## License
 
 MIT

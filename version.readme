@@ -2,6 +2,8 @@
 
 ## 2026-10-24
 
+- Added GitHub Actions release workflow (Linux/Windows/macOS) because native modules cannot be cross-compiled from Linux.
+- Set electron-builder GitHub publish `releaseType` to prerelease (beta).
 - Pointed package homepage, electron-updater publish, and release feed at https://github.com/taamsamane/backup.pack.
 - Multi-language UI: English and Persian (فارسی) with automatic RTL layout for `fa` (and future Arabic-script locales).
 - Phase 10: electron-updater (GitHub Releases) with Settings check/download/install; packaging publish config.
